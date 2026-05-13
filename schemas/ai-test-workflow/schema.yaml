@@ -1,40 +1,71 @@
 name: ai-test-workflow
-version: 1
-description: AI-driven automated testing pipeline
+version: 1.1
+description: AI-driven automated testing pipeline with explicit state management
 
 # ==========================================
 # 1. 角色定义 (Roles)
 # ==========================================
-# 定义了流程中涉及的 Agent 角色。
-# Main Agent (Supervisor) 根据此定义决定是“自己干”还是“招人干”。
 roles:
   supervisor:
     type: main
-    desc: "总控 Agent。负责意图解析、状态维护、任务分发、与用户交互。"
-    capabilities_required: ["file_read", "file_write", "state_management"]
+    desc: "总控 Agent。读取状态文件、分发任务、控制循环、与用户交互。"
     
   sub_agents:
     - id: case-generator
-      task: "分析 Spec 和代码，执行双向 Diff，生成 test-cases.md"
-      capabilities_required: ["file_read", "search_files", "write_file"]
-      
+      task: "分析 Spec/代码，生成 test-cases.md"
     - id: planner
-      task: "规划执行策略、Mock 方案、预置 SQL，生成 test-task.md"
-      capabilities_required: ["file_read", "write_file", "mcp_database"]
-      
+      task: "规划策略/Mock/SQL，生成 test-task.md"
     - id: executor
-      task: "执行用例、部署服务、四层校验，生成 test-results.json"
-      capabilities_required: ["shell_exec", "mcp_trigger", "mcp_logging", "mcp_database"]
-      
+      task: "部署/执行/四层校验，生成 test-results.json"
     - id: reporter
-      task: "汇总结果、分析修复，生成 test-report.md"
-      capabilities_required: ["file_read", "write_file"]
+      task: "汇总结果/修复代码，生成 test-report.md"
 
 # ==========================================
-# 2. 工作流图 (Artifact DAG)
+# 2. 共享状态协议 (Communication Protocol)
 # ==========================================
-# 定义了产出物之间的依赖关系。
-# 无论串行还是并行，都必须遵循此依赖顺序。
+# Agent 间唯一通信通道。禁止通过内存或对话历史传递进度。
+communication:
+  protocol: file-based
+  state_file: test-status.json
+  rules:
+    - "Read-Before-Write: 每个 Agent 启动时必须先读取 state_file"
+    - "Skip-If-Done: 若 current_step 已大于本步骤，或 completed_steps 包含本步骤 ID，直接跳过"
+    - "Atomic-Update: 任务完成后，必须追加更新 state_file，不得覆盖他人进度"
+
+# 状态文件结构定义
+state_schema:
+  pipeline_id: string
+  current_step: string
+  completed_steps: [string]
+  retry_count: int        # 修复循环计数器
+  max_retries: 3
+  failed_cases:           # 失败用例清单
+    - tc_id: string
+      error: string
+      layer: string
+  repair_log:             # 修复记录
+    - cycle: int
+      fixed_tc: string
+      change_summary: string
+
+# ==========================================
+# 3. 工作流与循环逻辑 (Workflow & Loops)
+# ==========================================
+workflow:
+  dag: [spec -> test-cases -> test-task -> test-execution -> test-report]
+  
+  loops:
+    repair-cycle:
+      trigger: "test-results.json 中存在 final=FAIL"
+      max_iterations: 3
+      flow: "test-execution -> reporter(修复) -> test-execution(仅重跑失败用例)"
+      state_update: "retry_count += 1"
+      abort_condition: "retry_count >= max_iterations 时，跳过重跑，直接进入 test-report"
+      resume_rule: "断点重启时，读取 retry_count 和 failed_cases 决定是否继续循环"
+
+# ==========================================
+# 4. 产物定义 (Artifacts)
+# ==========================================
 artifacts:
   - id: spec
     generated_by: supervisor
@@ -58,5 +89,4 @@ artifacts:
     generated_by: reporter
     requires: [test-results]
 
-# 输出根目录
 output_base: test-runs/<requirement-id>/
