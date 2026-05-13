@@ -76,10 +76,29 @@ The SOP supports two dimensions of flexibility:
 
 ## 6. Self-Evolution Loop
 
-The SOP improves itself automatically after every run:
+The SOP improves itself automatically after every run via a two-tier mechanism:
 
-1.  **Runtime Adaptation**: If a test fails due to a threshold (e.g., timeout), the Agent records a new rule in `.test-adaptations.yaml`.
-2.  **Knowledge Capture**: If a novel bug or tool issue is encountered, the Agent creates a new entry in `knowledge/pitfalls/`.
-3.  **Structural Proposal**: If the workflow itself is flawed, the Agent generates a `proposal.md` for human review.
+### Tier 1: Runtime Adaptation (Automatic)
+*   **File**: `.test-adaptations.yaml`
+*   **Trigger**: Minor parameter adjustments (e.g., timeout thresholds, log exclusions).
+*   **Action**: AI modifies the file and applies the new rules in the next run immediately.
+*   **Risk**: Low (Scoped to parameters only).
 
-This ensures that **Day 2 is always better than Day 1**.
+### Tier 2: Structural Proposal (Human-in-the-Loop)
+*   **Folder**: `proposals/`
+*   **Trigger**: Significant logic, workflow, or schema changes (e.g., adding a new validation layer L5, changing the DAG flow).
+*   **Action**:
+    1.  AI detects the need for structural change.
+    2.  AI generates a directory `proposals/<proposal-id>/` containing `proposal.md` and a `schema-diff.patch`.
+    3.  **Pause**: AI pauses the evolution and prompts the user to review.
+    4.  **Decision**:
+        *   **Approve**: AI merges the patch into `schemas/` and cleans up `proposals/`.
+        *   **Reject**: AI deletes the proposal and logs the reason.
+*   **Risk**: High (Changes the SOP structure).
+
+### 3. Knowledge Capture
+*   **File**: `knowledge/pitfalls/*.md` & `knowledge/index.yaml`
+*   **Trigger**: Encountering a novel bug, tool issue, or environment quirk.
+*   **Action**: AI records the solution to prevent rework in future runs.
+
+This ensures that **Day 2 is always better than Day 1**, balancing speed (Tier 1) with safety (Tier 2).
