@@ -1,0 +1,26 @@
+# Registry of test domains and their required adapters
+domains:
+  backend-api:
+    description: "Backend interface testing (HSF/HTTP)"
+    trigger: trigger/hsf.md
+    validation:
+      - validation/response.md
+      - validation/log-path.md
+      - validation/data-state.md
+
+  frontend-ui:
+    description: "Frontend UI testing"
+    trigger: trigger/playwright.md
+    validation:
+      - validation/dom.md
+      - validation/visual.md
+
+  full-stack:
+    description: "End-to-end (Frontend Operation + Backend Validation)"
+    trigger:
+      - trigger/playwright.md
+      - trigger/hsf.md
+    validation:
+      - validation/dom.md
+      - validation/log-path.md
+      - validation/data-state.md

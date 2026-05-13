@@ -1,0 +1,15 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Test Runs (Project specific)
+test-runs/
+
+# Secrets
+*.key
+*.pem
+.env

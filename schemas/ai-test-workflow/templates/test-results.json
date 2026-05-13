@@ -1,0 +1,15 @@
+{
+  "TC-001": {
+    "trigger": "HSF call...",
+    "response": {"success": true, "code": "0"},
+    "traceId": "0a1b...",
+    "exec_time_ms": 120,
+    "layers": {
+      "L1": {"status": "PASS", "details": "success=true"},
+      "L2": {"status": "PASS", "nodes": ["Activity.start", "Activity.end"]},
+      "L3": {"status": "PASS", "diff": {"status": {"actual": "ACTIVE", "expected": "ACTIVE"}}},
+      "L4": {"status": "PASS"}
+    },
+    "final": "PASS"
+  }
+}

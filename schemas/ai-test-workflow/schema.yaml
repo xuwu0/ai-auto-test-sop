@@ -1,0 +1,50 @@
+name: ai-test-workflow
+version: 1
+description: AI-driven automated testing pipeline
+
+# Artifact Definitions
+artifacts:
+  - id: spec
+    generates: spec.md
+    description: Requirement specification (normalized from various sources)
+    instruction: |
+      Normalize the input requirement into a standard spec.md format.
+      Include: Background, Goals, Business Rules, and Affected Code Modules.
+    requires: []
+
+  - id: test-cases
+    generates: test-cases.md
+    description: Structured test cases with assertions
+    instruction: |
+      Analyze spec.md and code to generate test cases.
+      Perform Spec-Code bidirectional diff.
+      Generate business-level assertions (Data State + Log Path).
+    requires: [spec]
+    user_review: true
+
+  - id: test-task
+    generates: test-task.md
+    description: Execution strategy and data planning
+    instruction: |
+      Plan execution strategy for each test case.
+      Determine trigger method, mock needs, and data construction.
+    requires: [test-cases]
+    user_review: true
+
+  - id: test-execution
+    generates: test-results.json
+    description: Execution results and 4-layer validation
+    instruction: |
+      Execute tests based on test-task.md.
+      Perform 4-layer validation: L1(Response), L2(Log), L3(Data), L4(Semantic).
+    requires: [test-task]
+
+  - id: test-report
+    generates: test-report.md
+    description: Final test report
+    instruction: |
+      Summarize results, failure details, and repair records.
+      Output pass rates per layer and overall conclusion.
+    requires: [test-execution]
+
+output_base: test-runs/<requirement-id>/

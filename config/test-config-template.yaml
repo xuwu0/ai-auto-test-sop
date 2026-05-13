@@ -1,0 +1,27 @@
+schema: ai-test-workflow
+
+project:
+  name: my-project
+  framework: cola # or spring-boot, grpc...
+
+adapters:
+  trigger: hsf
+  logging: sls
+  database: dms
+  deployment: aone
+
+context: |
+  Tech stack: Java, Spring Boot, COLA.
+
+mcp:
+  tools:
+    yuque-mcp:
+      enabled: true
+    group-env:
+      enabled: true
+    dms-mcp-server:
+      enabled: true
+    sls-mcp:
+      enabled: true
+    arthas:
+      enabled: true
