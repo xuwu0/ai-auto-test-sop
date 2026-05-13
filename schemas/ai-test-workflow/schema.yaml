@@ -1,92 +1,78 @@
 name: ai-test-workflow
-version: 1.1
-description: AI-driven automated testing pipeline with explicit state management
+version: 1.2
+description: AI-driven automated testing pipeline with Assisted Mode support
 
-# ==========================================
 # 1. 角色定义 (Roles)
-# ==========================================
 roles:
   supervisor:
     type: main
-    desc: "总控 Agent。读取状态文件、分发任务、控制循环、与用户交互。"
-    
+    desc: "Orchestrator. Parses input, manages state, dispatches tasks."
   sub_agents:
     - id: case-generator
-      task: "分析 Spec/代码，生成 test-cases.md"
+      task: "Analyze Spec/Code, generate test-cases.md"
     - id: planner
-      task: "规划策略/Mock/SQL，生成 test-task.md"
+      task: "Plan strategy, generate test-task.md AND/OR manual-test-guide.md"
     - id: executor
-      task: "部署/执行/四层校验，生成 test-results.json"
+      task: "Deploy/Execute/Validate (Only in Full-Auto mode)"
     - id: reporter
-      task: "汇总结果/修复代码，生成 test-report.md"
+      task: "Summarize results, fix code, generate report"
 
-# ==========================================
-# 2. 共享状态协议 (Communication Protocol)
-# ==========================================
-# Agent 间唯一通信通道。禁止通过内存或对话历史传递进度。
+# 2. 执行模式 (Execution Modes)
+execution_modes:
+  full-auto:
+    description: "AI executes everything. Requires full tool access."
+    flow: "spec -> test-cases -> test-task -> test-execution -> test-report"
+  assisted:
+    description: "AI plans, Human executes. Used when tools are limited."
+    flow: "spec -> test-cases -> test-task -> manual-test-guide -> (Human Input) -> test-results -> test-report"
+
+# 3. 共享状态协议 (Communication Protocol)
 communication:
   protocol: file-based
   state_file: test-status.json
   rules:
-    - "Read-Before-Write: 每个 Agent 启动时必须先读取 state_file"
-    - "Skip-If-Done: 若 current_step 已大于本步骤，或 completed_steps 包含本步骤 ID，直接跳过"
-    - "Atomic-Update: 任务完成后，必须追加更新 state_file，不得覆盖他人进度"
+    - "Read-Before-Write: Must read state before acting"
+    - "Skip-If-Done: Skip if current_step completed"
 
-# 状态文件结构定义
 state_schema:
   pipeline_id: string
   current_step: string
-  completed_steps: [string]
-  retry_count: int        # 修复循环计数器
+  mode: string  # full-auto | assisted
+  failed_cases: []
+  retry_count: 0
   max_retries: 3
-  failed_cases:           # 失败用例清单
-    - tc_id: string
-      error: string
-      layer: string
-  repair_log:             # 修复记录
-    - cycle: int
-      fixed_tc: string
-      change_summary: string
 
-# ==========================================
-# 3. 工作流与循环逻辑 (Workflow & Loops)
-# ==========================================
-workflow:
-  dag: [spec -> test-cases -> test-task -> test-execution -> test-report]
-  
-  loops:
-    repair-cycle:
-      trigger: "test-results.json 中存在 final=FAIL"
-      max_iterations: 3
-      flow: "test-execution -> reporter(修复) -> test-execution(仅重跑失败用例)"
-      state_update: "retry_count += 1"
-      abort_condition: "retry_count >= max_iterations 时，跳过重跑，直接进入 test-report"
-      resume_rule: "断点重启时，读取 retry_count 和 failed_cases 决定是否继续循环"
-
-# ==========================================
 # 4. 产物定义 (Artifacts)
-# ==========================================
 artifacts:
   - id: spec
     generated_by: supervisor
     requires: []
-    
   - id: test-cases
     generated_by: case-generator
     requires: [spec]
     user_review: true
-    
   - id: test-task
     generated_by: planner
     requires: [test-cases]
     user_review: true
-    
+  - id: manual-test-guide
+    generated_by: planner
+    requires: [test-task]
+    description: "Human-readable guide for manual execution"
+    condition: "execution_mode == 'assisted'"
   - id: test-results
     generated_by: executor
     requires: [test-task]
-    
+    condition: "execution_mode == 'full-auto'"
+    # In assisted mode, user input populates this
   - id: test-report
     generated_by: reporter
     requires: [test-results]
+
+loops:
+  repair-cycle:
+    trigger: "test-results.json contains FAIL"
+    max_iterations: 3
+    flow: "test-report(fix) -> test-execution(rerun)"
 
 output_base: test-runs/<requirement-id>/

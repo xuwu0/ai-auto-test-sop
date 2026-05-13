@@ -1,46 +1,22 @@
 schema: ai-test-workflow
 
+# Execution Mode: full-auto (AI runs all) | assisted (Human runs tests)
+execution_mode: full-auto
+
 project:
   name: my-project
-  framework: cola # or spring-boot, grpc...
-  language: java
 
-# Adapter Selection
 adapters:
-  trigger: hsf        # hsf, http, playwright...
-  logging: sls        # sls, elk...
-  database: dms       # dms, direct...
-  deployment: aone    # aone, jenkins...
-  config_center: diamond # diamond, nacos...
-  diagnosis: arthas   # arthas, py-spy...
+  trigger: hsf
+  logging: sls
+  database: dms
+  deployment: aone
 
-# Project Context
 context: |
-  Tech stack: Java, Spring Boot, COLA.
-  Error codes file: errors_zh_AA.properties
+  Tech stack: Java, Spring Boot.
 
-# MCP Tools Configuration
 mcp:
   tools:
-    yuque-mcp:
-      enabled: true
-      purpose: "Requirement Docs"
-    group-env:
-      enabled: true
-      purpose: "Deployment & Env Info"
-    dms-mcp-server:
-      enabled: true
-      purpose: "SQL Execution & Validation"
-    sls-mcp:
-      enabled: true
-      purpose: "Log Query (L2)"
-    arthas:
-      enabled: true
-      purpose: "Diagnosis & HotFix"
-
-  # Fallback Strategies
-  fallback:
-    sls-mcp: "Skip L2 validation, report as SKIPPED"
-    dms-mcp-server: "Skip L3 validation, report as SKIPPED"
-    arthas: "Skip HotFix, use Full Deployment"
-    group-env: "Ask user for IP/Port manually"
+    group-env: { enabled: true }
+    dms-mcp-server: { enabled: true }
+    sls-mcp: { enabled: true }
