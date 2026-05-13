@@ -2,49 +2,61 @@ name: ai-test-workflow
 version: 1
 description: AI-driven automated testing pipeline
 
-# Artifact Definitions
+# ==========================================
+# 1. 角色定义 (Roles)
+# ==========================================
+# 定义了流程中涉及的 Agent 角色。
+# Main Agent (Supervisor) 根据此定义决定是“自己干”还是“招人干”。
+roles:
+  supervisor:
+    type: main
+    desc: "总控 Agent。负责意图解析、状态维护、任务分发、与用户交互。"
+    capabilities_required: ["file_read", "file_write", "state_management"]
+    
+  sub_agents:
+    - id: case-generator
+      task: "分析 Spec 和代码，执行双向 Diff，生成 test-cases.md"
+      capabilities_required: ["file_read", "search_files", "write_file"]
+      
+    - id: planner
+      task: "规划执行策略、Mock 方案、预置 SQL，生成 test-task.md"
+      capabilities_required: ["file_read", "write_file", "mcp_database"]
+      
+    - id: executor
+      task: "执行用例、部署服务、四层校验，生成 test-results.json"
+      capabilities_required: ["shell_exec", "mcp_trigger", "mcp_logging", "mcp_database"]
+      
+    - id: reporter
+      task: "汇总结果、分析修复，生成 test-report.md"
+      capabilities_required: ["file_read", "write_file"]
+
+# ==========================================
+# 2. 工作流图 (Artifact DAG)
+# ==========================================
+# 定义了产出物之间的依赖关系。
+# 无论串行还是并行，都必须遵循此依赖顺序。
 artifacts:
   - id: spec
-    generates: spec.md
-    description: Requirement specification (normalized from various sources)
-    instruction: |
-      Normalize the input requirement into a standard spec.md format.
-      Include: Background, Goals, Business Rules, and Affected Code Modules.
+    generated_by: supervisor
     requires: []
-
+    
   - id: test-cases
-    generates: test-cases.md
-    description: Structured test cases with assertions
-    instruction: |
-      Analyze spec.md and code to generate test cases.
-      Perform Spec-Code bidirectional diff.
-      Generate business-level assertions (Data State + Log Path).
+    generated_by: case-generator
     requires: [spec]
     user_review: true
-
+    
   - id: test-task
-    generates: test-task.md
-    description: Execution strategy and data planning
-    instruction: |
-      Plan execution strategy for each test case.
-      Determine trigger method, mock needs, and data construction.
+    generated_by: planner
     requires: [test-cases]
     user_review: true
-
-  - id: test-execution
-    generates: test-results.json
-    description: Execution results and 4-layer validation
-    instruction: |
-      Execute tests based on test-task.md.
-      Perform 4-layer validation: L1(Response), L2(Log), L3(Data), L4(Semantic).
+    
+  - id: test-results
+    generated_by: executor
     requires: [test-task]
-
+    
   - id: test-report
-    generates: test-report.md
-    description: Final test report
-    instruction: |
-      Summarize results, failure details, and repair records.
-      Output pass rates per layer and overall conclusion.
-    requires: [test-execution]
+    generated_by: reporter
+    requires: [test-results]
 
+# 输出根目录
 output_base: test-runs/<requirement-id>/
