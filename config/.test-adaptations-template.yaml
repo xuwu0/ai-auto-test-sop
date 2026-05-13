@@ -1,0 +1,15 @@
+# Project Adaptations (Auto-Generated)
+# AI uses this file to override default behaviors based on feedback.
+# DO NOT delete this file; AI appends new rules here.
+
+project: my-project
+
+adaptations:
+  # Examples:
+  # - id: l3-async-poll
+  #   rule: "L3 Data Validation Timeout"
+  #   change: { "from": "30s", "to": "60s" }
+  
+  # - id: sls-exclude
+  #   rule: "L2 Log Validation Exclusion"
+  #   change: { "add": ["com.thirdparty.*"] }
