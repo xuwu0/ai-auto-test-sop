@@ -1,6 +1,6 @@
 name: ai-test-workflow
-version: 1.4
-description: AI-driven automated testing pipeline with Auto-Bootstrap
+version: 1.5
+description: AI-driven automated testing pipeline with Execution Logging
 
 # ==========================================
 # 1. 角色定义 (Roles)
@@ -9,16 +9,10 @@ roles:
   supervisor:
     type: main
     desc: "Orchestrator. Parses input, manages state, dispatches tasks."
-    # ⚠️ Mandatory Initialization Step
     initialization: |
-      BEFORE starting any test workflow:
       1. Check if 'agents/<current-agent-name>.md' exists.
-      2. IF NOT EXISTS:
-         - Run 'agents/self-check-instructions.md'.
-         - Create 'agents/<current-agent-name>.md' based on test results.
-         - Report: "✅ Auto-created Agent Profile: <name>. Capabilities: ..."
-      3. IF EXISTS:
-         - Load capabilities from the file to determine execution mode.
+      2. IF NOT EXISTS: Run 'agents/self-check-instructions.md', create profile.
+      3. Load profile.
 
   sub_agents:
     - id: case-generator
@@ -26,28 +20,28 @@ roles:
     - id: planner
       task: "Plan strategy, generate test-task.md AND/OR manual-test-guide.md"
     - id: executor
-      task: "Deploy/Execute/Validate (Only in Full-Auto mode)"
+      task: "Deploy/Execute/Validate"
     - id: reporter
       task: "Summarize results, fix code, generate report"
 
 # ==========================================
-# 2. 全局隔离规则 (Input/Output Isolation)
+# 2. 全局规则 (Rules)
 # ==========================================
 rules:
   isolation:
-    - input_source: "Read-Only. NEVER write to input paths (OpenSpec, local files, URLs)."
+    - input_source: "Read-Only. NEVER write to input paths."
     - output_base: "ALWAYS write to 'test-runs/<requirement-id>/'. Never mix inputs and outputs."
-    - naming: "Directory name in test-runs/ should be derived from the requirement ID or filename."
+  logging:
+    - artifact: "execution-log.md"
+      requirement: "Every tool call (HSF, SQL, Shell) MUST be logged with params/result BEFORE execution."
 
 # ==========================================
 # 3. 执行模式 (Execution Modes)
 # ==========================================
 execution_modes:
   full-auto:
-    description: "AI executes everything. Requires full tool access."
     flow: "spec -> test-cases -> test-task -> test-execution -> test-report"
   assisted:
-    description: "AI plans, Human executes. Used when tools are limited."
     flow: "spec -> test-cases -> test-task -> manual-test-guide -> (Human Input) -> test-results -> test-report"
 
 # ==========================================
@@ -56,17 +50,6 @@ execution_modes:
 communication:
   protocol: file-based
   state_file: test-status.json
-  rules:
-    - "Read-Before-Write: Must read state before acting"
-    - "Skip-If-Done: Skip if current_step completed"
-
-state_schema:
-  pipeline_id: string
-  current_step: string
-  mode: string  # full-auto | assisted
-  failed_cases: []
-  retry_count: 0
-  max_retries: 3
 
 # ==========================================
 # 5. 产物定义 (Artifacts)
@@ -99,6 +82,5 @@ loops:
   repair-cycle:
     trigger: "test-results.json contains FAIL"
     max_iterations: 3
-    flow: "test-report(fix) -> test-execution(rerun)"
 
 output_base: test-runs/<requirement-id>/

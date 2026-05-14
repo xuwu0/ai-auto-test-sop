@@ -58,6 +58,16 @@ The SOP framework is under active development. To update:
 cd .test-sop && git pull origin main
 ```
 
+## 📺 Monitoring & Transparency
+
+Since AI workflows can be long, use these tools to track progress:
+
+1.  **`test-runs/<id>/test-status.json`**:
+    *   The **"Dashboard"**. Check `current_step` and `retry_count`.
+2.  **`test-runs/<id>/execution-log.md`**:
+    *   The **"Black Box"**. Contains a real-time audit of every HSF call, SQL query, and Shell command with timestamps and parameters.
+    *   *Note: The AI is required to write to this file before every action.*
+
 ## 📂 Project Structure
 
 ```text
