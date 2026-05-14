@@ -1,6 +1,6 @@
 name: ai-test-workflow
-version: 1.3
-description: AI-driven automated testing pipeline with Input/Output Isolation
+version: 1.4
+description: AI-driven automated testing pipeline with Auto-Bootstrap
 
 # ==========================================
 # 1. 角色定义 (Roles)
@@ -9,6 +9,17 @@ roles:
   supervisor:
     type: main
     desc: "Orchestrator. Parses input, manages state, dispatches tasks."
+    # ⚠️ Mandatory Initialization Step
+    initialization: |
+      BEFORE starting any test workflow:
+      1. Check if 'agents/<current-agent-name>.md' exists.
+      2. IF NOT EXISTS:
+         - Run 'agents/self-check-instructions.md'.
+         - Create 'agents/<current-agent-name>.md' based on test results.
+         - Report: "✅ Auto-created Agent Profile: <name>. Capabilities: ..."
+      3. IF EXISTS:
+         - Load capabilities from the file to determine execution mode.
+
   sub_agents:
     - id: case-generator
       task: "Analyze Spec/Code, generate test-cases.md"
@@ -20,14 +31,13 @@ roles:
       task: "Summarize results, fix code, generate report"
 
 # ==========================================
-# 2. 全局隔离规则 (CRITICAL: Input/Output Isolation)
+# 2. 全局隔离规则 (Input/Output Isolation)
 # ==========================================
-# 强制规定读写路径，防止污染需求文档源目录。
 rules:
   isolation:
     - input_source: "Read-Only. NEVER write to input paths (OpenSpec, local files, URLs)."
     - output_base: "ALWAYS write to 'test-runs/<requirement-id>/'. Never mix inputs and outputs."
-    - naming: "Directory name in test-runs/ should be derived from the requirement ID or filename, NOT the full source path."
+    - naming: "Directory name in test-runs/ should be derived from the requirement ID or filename."
 
 # ==========================================
 # 3. 执行模式 (Execution Modes)
@@ -41,7 +51,7 @@ execution_modes:
     flow: "spec -> test-cases -> test-task -> manual-test-guide -> (Human Input) -> test-results -> test-report"
 
 # ==========================================
-# 4. 共享状态协议 (Communication Protocol)
+# 4. 通信协议 (Communication)
 # ==========================================
 communication:
   protocol: file-based
@@ -76,7 +86,6 @@ artifacts:
   - id: manual-test-guide
     generated_by: planner
     requires: [test-task]
-    description: "Human-readable guide for manual execution"
     condition: "execution_mode == 'assisted'"
   - id: test-results
     generated_by: executor
