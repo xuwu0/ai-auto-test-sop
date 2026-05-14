@@ -66,6 +66,16 @@ If using a new AI Copilot, ask it to run the self-check:
 
 Provide your spec source (OpenSpec, URL, or text) and let the AI drive the workflow.
 
+## 🔄 Updating
+
+The SOP framework is under active development. To update your project to the latest version:
+
+```bash
+cd .test-sop && git pull origin main
+```
+
+> **Note**: Always pull before starting a new test cycle to ensure you have the latest Schema definitions and Adapters.
+
 ## 📂 Project Structure
 
 ```text
