@@ -11,82 +11,65 @@ Unlike traditional testing scripts that rely on specific tools or rigid workflow
 *   **Agent-Agnostic**: Automatically adjusts its execution strategy based on the AI Agent's capabilities.
 *   **Self-Evolving**: Builds a knowledge base of pitfalls and adaptations from real execution.
 
-## 🚀 Key Features
-
-*   **🧩 Schema-Driven Workflow**: Defines artifacts (Test Cases, Tasks, Reports) and their dependencies.
-*   **🔌 Pluggable Adapters**: Decouples logic from technology. Switch between HSF/HTTP, SLS/ELK, or Playwright/Selenium just by changing config.
-*   **🧠 Self-Check Mechanism**: Not sure if your AI Agent supports a feature? Run the self-check script to generate its own capability profile.
-*   **🔄 Knowledge Loop**: Automatically captures failures and "lessons learned" into a structured knowledge base.
-
 ## 🏁 Quick Start
 
-### 1. Installation
+### ⚡ Option A: Zero-Config (Recommended for AI Agents)
+*The simplest way to let the AI handle everything.*
 
-```bash
-curl -sSL https://raw.githubusercontent.com/xuwu0/ai-auto-test-sop/main/install.sh | bash
-```
+1. **Clone Framework**:
+   ```bash
+   git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop
+   cp .test-sop/config/test-config-template.yaml ./test-config.yaml
+   ```
 
-### 2. MCP Configuration (⚠️ Crucial Step)
+2. **Activate Agent**:
+   Copy the `INSTRUCTIONS.md` to your project root (or paste it into your AI's Custom Instructions):
+   ```bash
+   cp .test-sop/INSTRUCTIONS.md .
+   ```
+   *Now, just type `/test-sop` and the AI will auto-boot, self-check, and run!*
 
-**To enable automated testing (L2 Logs, L3Data, Deployment), you must configure your MCP tools.**
+### 🔧 Option B: Manual Setup (For Developers)
 
-Edit `test-config.yaml` to declare which tools are available in your environment.
+1. **Clone**: `git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop`
+2. **Configure**: `cp .test-sop/config/test-config-template.yaml ./test-config.yaml`
+3. **Edit Config**: Define your MCP tools and execution mode in `test-config.yaml`.
+4. **Start**: Ask your AI to execute based on the schema in `.test-sop/`.
 
+### 🔌 MCP Configuration (Required for Full-Auto Mode)
+**To enable automated testing (L2 Logs, L3 Data, Deployment), you must configure your MCP tools.**
+
+Edit `test-config.yaml`:
 ```yaml
-# test-config.yaml
-
 mcp:
   tools:
-    # Logging Tool (Required for L2 Validation)
-    sls-mcp:
-      enabled: true
-    
-    # Database Tool (Required for L3 Validation)
-    dms-mcp-server:
-      enabled: true
-      
-    # Deployment Tool (Required for Auto-Deploy)
-    group-env:
-      enabled: true
-
-  # Fallback: What to do if tools are unavailable
+    sls-mcp: { enabled: true }   # For Log Validation
+    dms-mcp-server: { enabled: true } # For Data Validation
+    group-env: { enabled: true } # For Deployment
   fallback:
     sls-mcp: "Skip L2, report as SKIPPED"
 ```
-
-> **💡 Don't have MCP tools?** Set `execution_mode: assisted` in your config. The SOP will generate a **Manual Guide** for you to run tests yourself.
-
-### 3. Agent Self-Check (Optional)
-
-If using a new AI Copilot, ask it to run the self-check:
-
-> "Please execute `.test-sop/agents/self-check-instructions.md` and generate your agent profile."
-
-### 4. Start Testing
-
-Provide your spec source (OpenSpec, URL, or text) and let the AI drive the workflow.
+> **💡 No MCP tools?** Set `execution_mode: assisted` in config. The AI will generate a Manual Guide for you.
 
 ## 🔄 Updating
 
-The SOP framework is under active development. To update your project to the latest version:
-
+The SOP framework is under active development. To update:
 ```bash
 cd .test-sop && git pull origin main
 ```
-
-> **Note**: Always pull before starting a new test cycle to ensure you have the latest Schema definitions and Adapters.
 
 ## 📂 Project Structure
 
 ```text
 ai-auto-test-sop/
 ├── schemas/                  # Workflow definition (DAG + Templates)
-├── adapters/                 # Technical implementations (Trigger, Validation, etc.)
-├── agents/                   # AI Agent capability profiles & Self-Check
-├── knowledge/                # Self-evolving knowledge base (Pitfalls, Best Practices)
-├── config/                   # Project configuration templates (inc. MCP setup)
-├── install.sh                # One-click installation script
-├── DESIGN.md                 # Architecture and design explanation
+├── adapters/                 # Technical implementations
+├── agents/                   # AI Agent profiles & Self-Check
+├── knowledge/                # Self-evolving knowledge base
+├── config/                   # Project configuration templates
+├── INSTRUCTIONS.md           # <--- Paste this to AI to enable /test-sop trigger
+├── install.sh
+├── DESIGN.md
 └── README.md
 ```
 
