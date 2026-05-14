@@ -53,7 +53,57 @@ Schema根据 `test-config.yaml` 中的配置路由任务：
     *   **等待状态**：AI暂停并等待人工执行步骤（例如在IDE或Postman中）并粘贴结果/日志。
     *   **验证**：`reporter` Agent然后根据schema中定义的L1-L4规则分析粘贴的结果。
 
-## 4. 通信协议
+## 4. 日志记录系统
+
+日志记录是SOP框架的核心透明度机制，确保AI工作流的可审计性和可追踪性。
+
+### 4.1 执行日志（execution-log.md）
+*   **位置**：`test-runs/<requirement-id>/execution-log.md`
+*   **作用**：黑匣子式审计记录
+*   **记录内容**：
+    *   每个HSF调用的详细信息和参数
+    *   所有SQL查询语句和结果
+    *   Shell命令的执行记录
+    *   时间戳和参数的实时记录
+*   **要求**：AI必须在每次工具调用前写入此文件
+
+### 4.2 日志验证层级
+SOP支持多层级日志验证机制：
+
+#### L1: 响应验证
+- 检查API响应的基本结构
+- 验证success字段、code值、data结构
+
+#### L2: 日志路径验证（Log Path Validation）
+- **提取traceId**：从响应中提取分布式追踪ID
+- **SLS日志查询**：通过MCP工具查询SLS日志
+- **验证规则**：
+  - **完整性**：所有预期节点都存在
+  - **顺序性**：节点按正确顺序出现
+  - **清洁度**：无ERROR/WARN日志
+
+#### L3: 数据状态验证
+- 验证数据库中的数据状态变化
+- 检查预期的数据持久化和一致性
+
+### 4.3 日志适配器系统
+通过Adapter层实现日志系统的可插拔设计：
+
+*   **adapters/logging/sls.md**：SLS日志查询适配器
+*   **adapters/validation/log-path.md**：日志路径验证规则
+*   **切换支持**：可轻松从SLS切换到ELK等其他日志系统
+
+### 4.4 日志排除规则
+通过 `.test-adaptations.yaml` 支持动态日志排除：
+```yaml
+- id: sls-exclude-patterns
+  triggered_by: "L2 Log validation false positive (3rd party logs)"
+  rule: "L2 Log Validation Exclusion"
+  change:
+    add: ["com.thirdparty.*", "external-gateway.*"]
+```
+
+## 5. 通信协议
 
 Agent通过基于共享文件的状态机进行通信，而不是通过临时的聊天历史。
 

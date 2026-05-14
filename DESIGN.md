@@ -53,7 +53,57 @@ The Schema routes tasks based on the configuration in `test-config.yaml`:
     *   **Wait State**: The AI pauses and waits for the human to execute the steps (e.g., in IDE or Postman) and paste the results/logs.
     *   **Validation**: The `reporter` Agent then analyzes the pasted results against the L1-L4 rules defined in the schema.
 
-## 4. Communication Protocol
+## 4. Logging System
+
+The logging system is a core transparency mechanism in the SOP framework, ensuring auditability and traceability of AI workflows.
+
+### 4.1 Execution Log (execution-log.md)
+*   **Location**: `test-runs/<requirement-id>/execution-log.md`
+*   **Purpose**: Black box-style audit record
+*   **Content**:
+    *   Detailed information and parameters for every HSF call
+    *   All SQL query statements and results
+    *   Shell command execution records
+    *   Real-time records with timestamps and parameters
+*   **Requirement**: AI must write to this file before every tool call
+
+### 4.2 Log Validation Tiers
+The SOP supports a multi-tiered log validation mechanism:
+
+#### L1: Response Validation
+- Checks basic API response structure
+- Validates success field, code value, data structure
+
+#### L2: Log Path Validation
+- **Extract traceId**: Extracts distributed tracing ID from responses
+- **SLS Log Query**: Queries SLS logs via MCP tools
+- **Validation Rules**:
+  - **Completeness**: All expected nodes are present
+  - **Order**: Nodes appear in correct sequence
+  - **Clean**: No ERROR/WARN logs
+
+#### L3: Data State Validation
+- Validates data state changes in database
+- Checks expected data persistence and consistency
+
+### 4.3 Log Adapter System
+Implements a pluggable design for the logging system through the Adapter layer:
+
+*   **adapters/logging/sls.md**: SLS log query adapter
+*   **adapters/validation/log-path.md**: Log path validation rules
+*   **Switching Support**: Easy switching from SLS to other log systems like ELK
+
+### 4.4 Log Exclusion Rules
+Supports dynamic log exclusion via `.test-adaptations.yaml`:
+```yaml
+- id: sls-exclude-patterns
+  triggered_by: "L2 Log validation false positive (3rd party logs)"
+  rule: "L2 Log Validation Exclusion"
+  change:
+    add: ["com.thirdparty.*", "external-gateway.*"]
+```
+
+## 5. Communication Protocol
 
 Agents communicate via a shared file-based state machine, not through ephemeral chat history.
 
