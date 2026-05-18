@@ -20,3 +20,12 @@ mcp:
     group-env: { enabled: true }
     dms-mcp-server: { enabled: true }
     sls-mcp: { enabled: true }
+
+# --- Requirement-Level Degradation Override (Layer 2) ---
+# Only specify keys you want to override from the Agent Profile defaults.
+# Unspecified keys inherit from agents/<profile>.md.
+# Available actions: SKIP | FAIL | MANUAL | FALLBACK:<adapter>
+#
+# degradation:
+#   no_mcp: FAIL         # This requirement MUST have MCP, fail if unavailable
+#   no_deploy: SKIP      # Deployment not needed for this requirement

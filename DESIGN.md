@@ -124,17 +124,86 @@ The SOP supports two dimensions of flexibility:
 | **Deployment** | Async (Fire & Forget) | Sync (Wait & Block) |
 | **Resilience** | High (Sub-agents fail independently) | Low (One error blocks all) |
 
-## 6. Self-Evolution Loop
+## 6. Degradation Rules: 3-Layer Inheritance
+
+The SOP uses a cascading override model for degradation rules, ensuring flexibility without added complexity for users.
+
+### 6.1 Inheritance Chain (Priority: High → Low)
+
+```
+Case Level  →  Requirement Level  →  Global (Agent Profile)
+(test-task.md)   (test-config.yaml)    (agents/<profile>.md)
+```
+
+**Merge Algorithm**: Later layers override earlier layers. Unspecified keys pass through (inherit from parent).
+
+### 6.2 Layer Definitions
+
+| Layer | File | Scope | Who Writes |
+|-------|------|-------|------------|
+| Global | `agents/<profile>.md` | All requirements, all cases | Once during setup |
+| Requirement | `test-config.yaml` | All cases in this requirement | User per requirement |
+| Case | `test-task.md` (Section 4) | Single test case only | AI/User per case |
+
+### 6.3 Available Triggers & Actions
+
+**Triggers** (conditions that activate degradation):
+| Trigger | Meaning |
+|---------|----------|
+| `no_mcp` | MCP tools unavailable |
+| `no_shell` | Shell execution not supported |
+| `no_deploy` | Deployment capability missing |
+| `no_database` | Database access unavailable |
+
+**Actions** (what to do when trigger is active):
+| Action | Behavior |
+|--------|----------|
+| `SKIP` | Skip the validation layer, mark as SKIPPED |
+| `FAIL` | Mark the case as FAIL immediately |
+| `MANUAL` | Degrade to assisted mode, generate manual guide |
+| `FALLBACK:<adapter>` | Use alternative adapter (e.g., `FALLBACK:arthas`) |
+
+### 6.4 Example
+
+```yaml
+# Global (agents/hermes.md) - defaults
+degradation:
+  no_mcp: SKIP
+  no_shell: MANUAL
+  no_deploy: MANUAL
+  no_database: SKIP
+
+# Requirement (test-config.yaml) - override for this requirement
+degradation:
+  no_mcp: FAIL         # This requirement MUST have L2 log validation
+
+# Case (test-task.md) - TC-003 is special
+TC-003:
+  degradation:
+    no_shell: SKIP     # This offline case doesn't need shell at all
+```
+
+**Effective rules for TC-003**: `no_mcp=FAIL`, `no_shell=SKIP`, `no_deploy=MANUAL`, `no_database=SKIP`
+
+### 6.5 User Experience
+
+| Scenario | User Action |
+|----------|-------------|
+| Defaults are fine | Write nothing (90% of cases) |
+| Requirement has special needs | Add 1-2 lines in `test-config.yaml` |
+| One case is exceptional | AI adds override in `test-task.md` Section 4 |
+
+## 7. Self-Evolution Loop
 
 The SOP improves itself automatically after every run via a two-tier mechanism:
 
-### Tier 1: Runtime Adaptation (Automatic)
+### 7.1 Runtime Adaptation (Automatic)
 *   **File**: `.test-adaptations.yaml`
 *   **Trigger**: Minor parameter adjustments (e.g., timeout thresholds, log exclusions).
 *   **Action**: AI modifies the file and applies the new rules in the next run immediately.
 *   **Risk**: Low (Scoped to parameters only).
 
-### Tier 2: Structural Proposal (Human-in-the-Loop)
+### 7.2 Structural Proposal (Human-in-the-Loop)
 *   **Folder**: `proposals/`
 *   **Trigger**: Significant logic, workflow, or schema changes (e.g., adding a new validation layer L5, changing the DAG flow).
 *   **Action**:
@@ -146,7 +215,7 @@ The SOP improves itself automatically after every run via a two-tier mechanism:
         *   **Reject**: AI deletes the proposal and logs the reason.
 *   **Risk**: High (Changes the SOP structure).
 
-### 3. Knowledge Capture
+### 7.3 Knowledge Capture
 *   **File**: `knowledge/pitfalls/*.md` & `knowledge/index.yaml`
 *   **Trigger**: Encountering a novel bug, tool issue, or environment quirk.
 *   **Action**: AI records the solution to prevent rework in future runs.

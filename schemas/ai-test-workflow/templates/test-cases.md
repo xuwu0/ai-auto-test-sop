@@ -5,10 +5,12 @@
 - Scope: [Description of what was covered]
 
 ## 2. Test Case Overview
-| TC-ID | Scenario (Condition → Result) | Expected Behavior | Priority |
-|-------|-------------------------------|-------------------|----------|
-| TC-001 | Normal path ... | success=true, data non-empty | P0 |
-| TC-002 | Edge case ... | success=false, code=ERR_X | P1 |
+| TC-ID | Scenario (Condition → Result) | Expected Behavior | Priority | Degradation |
+|-------|-------------------------------|-------------------|----------|-------------|
+| TC-001 | Normal path ... | success=true, data non-empty | P0 | *(default)* |
+| TC-002 | Edge case ... | success=false, code=ERR_X | P1 | `no_mcp: FAIL` |
+
+> **Degradation column**: Leave empty or write `(default)` to inherit from Requirement/Global level. Only specify overrides when this case has special requirements. Format: `key: ACTION`.
 
 ## 3. Test Case Details
 ### TC-001: [Scenario Name]

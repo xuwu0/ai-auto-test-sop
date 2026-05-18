@@ -35,6 +35,30 @@ rules:
     - artifact: "execution-log.md"
       requirement: "Every tool call (HSF, SQL, Shell) MUST be logged with params/result BEFORE execution."
 
+  # --- Degradation Rules: 3-Layer Inheritance ---
+  degradation:
+    description: |
+      Degradation rules follow a 3-layer inheritance chain:
+        Case level > Requirement level > Global (Agent Profile)
+      Only overrides need to be specified; unspecified keys inherit from the parent layer.
+    resolution_algorithm: |
+      effective_rules = merge(
+        agent_profile.degradation,       # Layer 3: Global default (agents/<profile>.md)
+        test_config.degradation,         # Layer 2: Requirement level (test-config.yaml)
+        current_case.degradation         # Layer 1: Case level (test-task.md per-case block)
+      )
+      # Later layers override earlier layers. Unspecified keys pass through.
+    actions:
+      SKIP: "Skip the validation layer, mark result as SKIPPED."
+      FAIL: "Mark the test case as FAIL immediately."
+      MANUAL: "Degrade to assisted mode, generate manual-test-guide for this step."
+      FALLBACK: "Use alternative adapter. Format: FALLBACK:<adapter-name>."
+    triggers:
+      - no_mcp
+      - no_shell
+      - no_deploy
+      - no_database
+
 # ==========================================
 # 3. 执行模式 (Execution Modes)
 # ==========================================
