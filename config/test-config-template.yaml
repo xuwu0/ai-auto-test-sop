@@ -1,5 +1,9 @@
 schema: ai-test-workflow
 
+# Language lock: all AI outputs (responses, test cases, reports, proposals)
+# MUST use this language. Set during install; edit manually to change.
+language: en
+
 # Execution Mode: full-auto (AI runs all) | assisted (Human runs tests)
 execution_mode: full-auto
 

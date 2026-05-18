@@ -1,0 +1,64 @@
+# MCP Auto-Discovery Rules
+#
+# Used by AI in INSTRUCTIONS Step 0.5 to automatically map MCP server names
+# (found in project-side MCP config files) to capability namespaces.
+#
+# Match rule: case-insensitive substring match against the server's KEY name
+# (the key under "mcpServers" in JSON). First-matching capability wins.
+# Servers matching nothing are listed as "unmapped" and skipped.
+
+# --- Scan paths (priority order) ---
+scan_paths:
+  - .qoder/settings.local.json   # Qoder
+  - .cursor/mcp.json             # Cursor
+  - .vscode/mcp.json             # VS Code (Copilot etc.)
+  - mcp.json                     # Generic project-root
+  - config/mcporter.json         # MCPorter
+  - .claude/claude_desktop_config.json  # Claude Code (project-local)
+
+# --- Server-name → capability mapping ---
+# Each entry: { capability, match: [substring patterns, case-insensitive] }
+mappings:
+  - capability: cap.log.query
+    match: [sls, log, logging, loki, elk, splunk, datadog]
+
+  - capability: cap.database.query
+    match: [db, dms, mysql, postgres, postgresql, mongo, redis, sqlite, oracle]
+
+  - capability: cap.deploy.async
+    match: [deploy, aone, cd-, jenkins, argocd, kubectl, k8s]
+
+  - capability: cap.config.read
+    match: [diamond, nacos, apollo, config-center, configcenter, consul, etcd]
+
+  - capability: cap.diagnose.trace
+    match: [arthas, diagnose, trace, profiler, async-profiler, jstack, perfma]
+
+  - capability: cap.trigger.http
+    match: [fetch, http, request, curl-mcp, rest]
+
+  - capability: cap.trigger.browser
+    match: [playwright, puppeteer, browser, chromium, selenium]
+
+  - capability: cap.trigger.rpc
+    match: [grpc, dubbo, thrift, rpc-mcp, hsf]
+
+# --- Output behavior ---
+behavior:
+  on_match: |
+    For each matched server S → capability C:
+      - Append C to config.yaml:mcp.enabled_capabilities (if absent)
+      - Set capabilities[C].binding = mcp (in config.yaml or workspace adaptations.yaml)
+      - Record server-to-capability binding in .test-workspace/adaptations.yaml under
+        "mcp_bindings: { <capability>: <server-key> }"
+  on_unmapped: |
+    List the server name in discovery report as "⚠️ unmapped (please assign manually)".
+    Do NOT guess; user MUST decide.
+  on_conflict: |
+    If multiple servers map to the same capability:
+      - Keep the first one as primary
+      - List others as fallback candidates in adaptations.yaml comments
+  on_no_config: |
+    No MCP config file found:
+      - Skip discovery silently
+      - Leave config.yaml:mcp.enabled_capabilities = [] for manual setup

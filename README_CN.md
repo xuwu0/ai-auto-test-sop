@@ -21,11 +21,12 @@
 your-project/
 ├── .test-sop/              ← 通用框架（只读，通过 git pull 升级）
 └── .test-workspace/        ← 项目侧所有文件（配置 + 沉淀 + 产物）
-    ├── config.yaml         ← 项目配置
+    ├── config.yaml         ← 项目配置（含语言锁定）
     ├── adaptations.yaml    ← Tier-1 进化（自动调参）
     ├── memory.md           ← 团队偏好与项目上下文
     ├── skills/             ← 可复用成功流程（自动沉淀）
     ├── pitfalls/           ← 项目级踩坑记录
+    ├── proposals/          ← 上推候选沉淀
     └── runs/<req-id>/      ← 每个需求的测试产物
 ```
 
@@ -39,14 +40,16 @@ your-project/
 1. **安装框架 + 工作区**：
    ```bash
    git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop
-   bash .test-sop/install.sh
+   bash .test-sop/install.sh --lang zh   # 或：--lang en（默认）
    ```
-   这会自动创建 `.test-workspace/`，包含默认配置、adaptations、memory 以及空的 skills/pitfalls/runs 目录。
+   这会自动创建 `.test-workspace/`，包含默认配置（语言已锁定）、adaptations、memory 以及空的 skills/pitfalls/runs/proposals 目录。
 
 2. **激活代理**：
-   将 `INSTRUCTIONS.md` 复制到项目根目录（或粘贴到 AI 的自定义指令中）：
+   `install.sh` 会自动把对应语言的 `INSTRUCTIONS` 复制到项目根目录：
    ```bash
-   cp .test-sop/INSTRUCTIONS.md .
+   # install.sh 自动处理：
+   #   --lang zh → INSTRUCTIONS_CN.md → ./INSTRUCTIONS.md
+   #   --lang en → INSTRUCTIONS.md    → ./INSTRUCTIONS.md
    ```
    现在输入 `/test-sop <需求源>`，AI 会自动启动、自检并运行。
 

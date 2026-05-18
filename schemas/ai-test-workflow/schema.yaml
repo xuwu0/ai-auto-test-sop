@@ -1,5 +1,5 @@
 name: ai-test-workflow
-version: 1.8
+version: 1.9
 description: AI-driven automated testing pipeline with Execution Logging
 
 # ==========================================
@@ -10,9 +10,11 @@ roles:
     type: main
     desc: "Orchestrator. Parses input, manages state, dispatches tasks."
     initialization: |
-      1. Resolve profile: agents/profiles/<name>.md -> .test-workspace/agents/<name>.md.
-      2. IF NEITHER EXISTS: Run 'agents/self-check-instructions.md', save to '.test-workspace/agents/<name>.md'.
-      3. Load profile; apply its degradation as Layer-3 default.
+      1. Load config: read '.test-workspace/config.yaml'.
+         - Extract 'language' field → lock all subsequent AI outputs to this language.
+      2. Resolve profile: agents/profiles/<name>.md -> .test-workspace/agents/<name>.md.
+      3. IF NEITHER EXISTS: Run 'agents/self-check-instructions.md', save to '.test-workspace/agents/<name>.md'.
+      4. Load profile; apply its degradation as Layer-3 default.
 
   sub_agents:
     - id: case-generator

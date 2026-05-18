@@ -11,6 +11,7 @@ Declare the identity, runtime capabilities, and global degradation defaults of t
 - `name` — canonical agent name (e.g., `hermes`, `qoder`, `cursor`).
 - `vendor` — distributor (e.g., `Anthropic`, `Qoder`, `Cursor`, `Alibaba`, `OpenAI`).
 - `mode` — execution model: `Multi-Agent Orchestration` | `Single-Agent` | `Pair-Programming`.
+- `language` — `inherit-from-config` (default) | explicit override (`en` | `zh`). When set to `inherit-from-config`, the agent uses `.test-workspace/config.yaml:language`.
 
 ### 2. Infrastructure Capabilities
 Required boolean flags (`[x]` or `[ ]`):

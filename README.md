@@ -21,11 +21,12 @@ This SOP enforces a **clean separation** between the universal framework and pro
 your-project/
 ├── .test-sop/              ← Universal framework (read-only, updated via git pull)
 └── .test-workspace/        ← All project-side files (config + accumulation + outputs)
-    ├── config.yaml         ← Project configuration
+    ├── config.yaml         ← Project configuration (includes language lock)
     ├── adaptations.yaml    ← Tier-1 evolution (auto-tuned parameters)
     ├── memory.md           ← Team preferences & project context
     ├── skills/             ← Reusable success workflows (auto-accumulated)
     ├── pitfalls/           ← Project-specific pitfalls
+    ├── proposals/          ← Upstream-candidate sediments
     └── runs/<req-id>/      ← Per-requirement test artifacts
 ```
 
@@ -39,14 +40,16 @@ your-project/
 1. **Install Framework + Workspace**:
    ```bash
    git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop
-   bash .test-sop/install.sh
+   bash .test-sop/install.sh --lang zh   # or: --lang en (default)
    ```
-   This creates `.test-workspace/` with default config, adaptations, memory, and empty skills/pitfalls/runs directories.
+   This creates `.test-workspace/` with default config (language locked), adaptations, memory, and empty skills/pitfalls/runs/proposals directories.
 
 2. **Activate Agent**:
-   Copy the `INSTRUCTIONS.md` to your project root (or paste it into your AI's Custom Instructions):
+   Copy the `INSTRUCTIONS.md` (language-matched) to your project root:
    ```bash
-   cp .test-sop/INSTRUCTIONS.md .
+   # install.sh auto-copies the correct language version:
+   #   --lang zh → INSTRUCTIONS_CN.md → ./INSTRUCTIONS.md
+   #   --lang en → INSTRUCTIONS.md    → ./INSTRUCTIONS.md
    ```
    Now type `/test-sop <requirement>` and the AI will auto-bootstrap, self-check, and run.
 

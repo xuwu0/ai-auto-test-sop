@@ -28,6 +28,33 @@ git pull origin main
 
 ---
 
+## [1.9] - 2026-05-15
+
+### Added
+- **Language Lock 机制**：安装时选择语言（`--lang zh|en`），写入 `config.yaml:language`，AI 启动后强制锁定所有输出语言
+- **install.sh** 支持 `--lang|-l` CLI 参数 + 交互式问询（默认 en）
+- **config/test-config-template.yaml** 顶部新增 `language: en` 字段
+- **agents/_interfaces/profile.md** Identity 段新增 `language` 字段（默认 `inherit-from-config`）
+- **agents/template.md** 同步新增 `language` 字段
+- **MCP Auto-Discovery**：新增 `adapters/_mcp-discovery.yaml`（扫描路径 + 语义映射规则 + 行为定义）
+- **INSTRUCTIONS Step 0.5**（中英）：AI 启动时自动扫描项目已有 MCP 配置文件，子串匹配映射到 capability namespace，绑定结果写入工作区 config/adaptations
+- **`/test-sop collect-mcp` 命令**（中英）：后续可随时手动触发增量 MCP 扫描，补充新增的 server 绑定
+- **Skill & Pitfall Harvest**：新增 `adapters/_skill-discovery.yaml`（扫描路径 + 相关性关键词 + 分类规则 + 去重策略 + 格式归一化）
+- **INSTRUCTIONS Step 0.6**（中英）：首次安装时自动扫描项目已有 AI 技能，筛选测试相关、分类 skill/pitfall、去重后归集到工作区
+- **`/test-sop collect-skill` 命令**（中英）：后续可随时手动触发增量收割，补充新增的散落技能
+
+### Changed
+- **Step 0.5 / 0.6 触发模式调整**：两个自动发现步骤统一为「仅首次安装时执行」，后续通过按需命令 `/test-sop collect-mcp` `/test-sop collect-skill` 手动触发，避免重复扫描干扰正常流程
+- **schema.yaml**：`initialization` 阶段调整为 4 步，第 1 步加载 config 并提取 language
+- **INSTRUCTIONS.md / INSTRUCTIONS_CN.md**：Step 0 增加「Language Lock」强制约束块；审阅提示更新为 `language, capabilities, mcp.enabled_capabilities`
+- **install.sh**：`sed` 注入 language 到 config.yaml（替代简单 `cp`）；新增 Step 5：根据 `--lang` 自动拷贝 INSTRUCTIONS_CN.md 或 INSTRUCTIONS.md 到项目根 `./INSTRUCTIONS.md`
+- **README.md / README_CN.md**：同步说明 `--lang` 参数与自动复制逻辑，目录树增加 `proposals/`
+
+### BREAKING
+- 下游已存在的 `.test-workspace/config.yaml` 无 `language` 字段时，AI 应视为缺省 `en`
+
+---
+
 ## [1.8] - 2026-05-15
 
 ### Changed

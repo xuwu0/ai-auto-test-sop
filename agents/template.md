@@ -8,6 +8,7 @@
 - name: <agent-name>
 - vendor: <vendor>
 - mode: Multi-Agent Orchestration | Single-Agent | Pair-Programming
+- language: inherit-from-config
 
 ## 2. Infrastructure Capabilities
 - [ ] File Read/Write/Patch

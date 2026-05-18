@@ -1,0 +1,153 @@
+# Skill & Pitfall Harvest Rules
+#
+# Used by AI in INSTRUCTIONS Step 0.6 (first install only) and
+# via `/test-sop collect-skill` (on-demand) to discover existing skills
+# scattered across the project, classify them, deduplicate, and
+# consolidate into .test-workspace/skills/ and .test-workspace/pitfalls/.
+
+# --- Scan paths (priority order) ---
+# Each path is relative to project root. Scan ALL that exist (not first-match).
+scan_paths:
+  - .qoder/skills/              # Qoder skills
+  - .qoder/learned-skills/      # Qoder auto-learned skills
+  - .cursor/rules/              # Cursor rules (may contain test know-how)
+  - .aone/skills/               # Aone Copilot skills
+  - .claude/commands/           # Claude Code commands
+  - .vscode/tasks/              # VS Code task definitions
+  - skills/                     # Generic project-root skills
+  - docs/testing/               # Team testing docs that embed skill-like knowledge
+  - scripts/test/               # Test helper scripts with embedded know-how
+
+# --- Relevance keywords (case-insensitive) ---
+# A skill file is considered "test-related" if its filename OR content
+# contains at least ONE of these keywords.
+relevance_keywords:
+  # Core testing
+  - test
+  - verify
+  - validate
+  - assert
+  - check
+  - coverage
+  # Test types
+  - regression
+  - smoke
+  - e2e
+  - integration-test
+  - unit-test
+  - api-test
+  # Verification workflows
+  - deploy-verify
+  - pre-release
+  - post-deploy
+  - canary
+  - rollback
+  # Failure knowledge
+  - bug
+  - error
+  - fail
+  - pitfall
+  - troubleshoot
+  - hotfix
+  - incident
+  # Review & quality
+  - review
+  - code-review
+  - quality
+  - lint
+  - static-analysis
+
+# --- Classification rules ---
+# After relevance filtering, classify each candidate as skill or pitfall.
+classification:
+  pitfall_signals:
+    # If ANY of these patterns appear in the content, classify as pitfall
+    - "symptom"
+    - "root cause"
+    - "error"
+    - "fail"
+    - "bug"
+    - "troubleshoot"
+    - "workaround"
+    - "known issue"
+    - "gotcha"
+    - "caveat"
+  skill_signals:
+    # Default: if not classified as pitfall, it's a skill
+    - "step"
+    - "workflow"
+    - "procedure"
+    - "how to"
+    - "guide"
+    - "checklist"
+    - "playbook"
+  ambiguous: |
+    If a file contains BOTH pitfall and skill signals:
+      - Extract the failure/root-cause section → pitfall
+      - Extract the workflow/solution section → skill
+      - Link them via `Related:` field in both files
+
+# --- Deduplication strategy ---
+dedup:
+  method: semantic-similarity
+  rules: |
+    1. Compare candidate's TITLE + DESCRIPTION against existing files in
+       .test-workspace/skills/ and .test-workspace/pitfalls/.
+    2. If a candidate's intent overlaps ≥70% with an existing file:
+       - Mark as DUPLICATE in the harvest report.
+       - Do NOT copy. Instead, suggest MERGE if the candidate has extra info.
+    3. If two candidates from different sources overlap ≥70%:
+       - Keep the more complete one (longer, more structured).
+       - Mark the other as DUPLICATE.
+    4. Exact filename collision: append `-<source>` suffix (e.g., `deploy-verify-qoder.md`).
+
+# --- Format normalization ---
+normalize:
+  skill_format: |
+    Convert to this structure:
+    ---
+    # Skill: <title>
+    > Source: <original-path> | Harvested: <date>
+
+    ## Trigger
+    <when to use this skill>
+
+    ## Steps
+    1. ...
+    2. ...
+
+    ## Expected Output
+    <what success looks like>
+
+    ## Notes
+    <caveats, dependencies>
+    ---
+  pitfall_format: |
+    Convert to .test-sop/schemas/ai-test-workflow/templates/pitfall.md template:
+    ---
+    # Pitfall: <title>
+    > Source: <original-path> | Harvested: <date>
+
+    ## Symptom
+    ## Root Cause
+    ## Solution
+    ## Applicable Scenarios
+    ## Related
+    ---
+
+# --- Output behavior ---
+behavior:
+  on_harvest: |
+    1. List all discovered candidates with classification and dedup status.
+    2. PAUSE — ask user to confirm which candidates to import.
+    3. For confirmed candidates:
+       - Normalize format.
+       - Write to .test-workspace/skills/<skill-id>.md or .test-workspace/pitfalls/<pitfall-id>.md.
+       - Add `> Source: <original-path>` header for traceability.
+    4. Summary report: imported N skills + M pitfalls, skipped K duplicates.
+  on_no_candidates: |
+    No test-related skills found in known locations. Skip silently.
+  on_partial_match: |
+    If a file is only loosely related (1 keyword match in a large file):
+      - List as "⚠️ low-confidence" in the report.
+      - Do NOT auto-import; let user decide.
