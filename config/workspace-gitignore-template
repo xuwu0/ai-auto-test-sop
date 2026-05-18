@@ -1,0 +1,14 @@
+# Default .gitignore for .test-workspace/
+# Copied to .test-workspace/.gitignore on first init.
+#
+# Strategy:
+#   - runs/    : NOT tracked (large transient artifacts)
+#   - skills/, pitfalls/, memory.md : tracked (team-shared accumulation)
+#   - config.yaml, adaptations.yaml : tracked (project config)
+
+# Test run artifacts (large, regenerable)
+runs/
+
+# Local-only overrides (per-developer, not shared)
+*.local.yaml
+*.local.md
