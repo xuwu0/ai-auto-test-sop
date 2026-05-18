@@ -7,7 +7,7 @@ Thumbs.db
 .idea/
 
 # Test Runs (Project specific)
-test-runs/
+.test-workspace/runs/
 
 # Secrets
 *.key

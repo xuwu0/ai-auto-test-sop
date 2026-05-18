@@ -1,0 +1,72 @@
+# Adapter Capabilities Namespace
+#
+# This file defines the abstract capabilities that the SOP framework recognizes.
+# Each capability points to its interface contract in `_interfaces/`.
+# Concrete implementations live in `.test-workspace/adapters/<category>/<name>.md`,
+# bound to capabilities via the team's `.test-workspace/adaptations.yaml`.
+
+capabilities:
+  # ---- Trigger: how to invoke the SUT ----
+  cap.trigger.rpc:
+    interface: _interfaces/trigger.md
+    examples: [HSF, gRPC, Dubbo, Thrift]
+  cap.trigger.http:
+    interface: _interfaces/trigger.md
+    examples: [curl, REST, GraphQL]
+  cap.trigger.browser:
+    interface: _interfaces/trigger.md
+    examples: [Playwright, Puppeteer, Selenium]
+  cap.trigger.cli:
+    interface: _interfaces/trigger.md
+    examples: [Shell, Make]
+
+  # ---- Logging: how to query runtime logs ----
+  cap.log.query:
+    interface: _interfaces/logging.md
+    examples: [SLS, ELK, Loki, CloudWatch, Splunk]
+
+  # ---- Database: data state inspection ----
+  cap.database.query:
+    interface: _interfaces/database.md
+    examples: [DMS, mysql-cli, psql, MongoDB Shell]
+  cap.database.snapshot:
+    interface: _interfaces/database.md
+    examples: [mysqldump, snapshot APIs]
+
+  # ---- Deployment ----
+  cap.deploy.async:
+    interface: _interfaces/deployment.md
+    examples: [Aone, Argo, Spinnaker, Helm, GitHub Actions]
+  cap.deploy.health:
+    interface: _interfaces/deployment.md
+    examples: [k8s probes, /health endpoint, smoke test]
+
+  # ---- Config Center: dynamic config reading & mock injection ----
+  cap.config.read:
+    interface: _interfaces/config-center.md
+    examples: [Diamond, Apollo, Nacos, Consul, etcd]
+  cap.config.inject:
+    interface: _interfaces/config-center.md
+    examples: [Diamond mock, Apollo override, env var override]
+
+  # ---- Diagnose: runtime troubleshooting ----
+  cap.diagnose.trace:
+    interface: _interfaces/diagnose.md
+    examples: [Arthas, async-profiler, jstack, py-spy]
+  cap.diagnose.hotfix:
+    interface: _interfaces/diagnose.md
+    examples: [Arthas redefine, JRebel, hot reload]
+
+  # ---- Validation (L1-L4 universal rules) ----
+  cap.validation.response:
+    interface: validation/response.md
+  cap.validation.log_path:
+    interface: validation/log-path.md
+  cap.validation.data_state:
+    interface: validation/data-state.md
+  cap.validation.dom:
+    interface: _interfaces/validation.md
+    examples: [Playwright assertions, Cypress]
+  cap.validation.visual:
+    interface: _interfaces/validation.md
+    examples: [Percy, Applitools, pixel-diff]

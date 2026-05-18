@@ -1,40 +1,66 @@
 # 系统设计与架构
 
+## 0. 框架边界（核心约定）
+
+本仓库是一份**通用规范（框架）**，不是某个团队的知识库。它严格区分两层：
+
+```
+your-project/
+├── .test-sop/             ← 通用框架（只读，通过 `git pull` 升级）
+└── .test-workspace/       ← 项目侧所有文件
+    ├── config.yaml        ← 项目配置
+    ├── adaptations.yaml   ← Tier-1 进化
+    ├── memory.md          ← 团队偏好与上下文
+    ├── skills/            ← 可复用流程
+    ├── pitfalls/          ← 项目级踩坑
+    └── runs/<req-id>/     ← 每个需求的产物
+```
+
+**规则**：
+*   ✅ 框架 `.test-sop/` 中应放：跨团队/跨语言的原语、通用 adapter、公共 AI profile、格式协议。
+*   ❌ 框架 `.test-sop/` 中不应放：团队私有 skill、项目踩坑、本地配置。
+*   ✅ 工作区 `.test-workspace/` 中应放：团队的所有沉淀。
+*   框架升级是**非破坏式**的：`cd .test-sop && git pull` 永不影响 `.test-workspace/`。
+
 ## 1. 核心理念
 
 本项目基于三个核心原则构建，旨在解决AI驱动测试中的碎片化问题：
 
 *   **🚫 规格无关**：需求可以来自OpenSpec、语雀、Jira或纯文本。SOP在处理前将所有内容标准化为统一的 `spec.md`。
 *   **🤖 代理无关**：无论你使用Hermes、Aone Copilot、Qoder还是Claude Code，SOP都能适应。它将**需要做什么**（Schema）与**谁来做**（Agent Profile）分开定义。
-*   **🔄 自进化**：与传统脚本不同，这个SOP会学习。它将运行时反馈捕获到 `knowledge/` 中，并将参数调整到 `.test-adaptations.yaml` 中，确保下次运行比上次更智能。
+*   **🔄 自进化**：与传统脚本不同，这个SOP会学习。它将运行时反馈沉淀到 `.test-workspace/`（skills/pitfalls/memory），并将参数调整到 `.test-workspace/adaptations.yaml` 中，确保下次运行比上次更智能。
 *   **🤝 人工协同（辅助模式）**：SOP支持"AI规划，人工执行"的工作流程。当工具或权限有限时，AI生成结构化的 `manual-test-guide.md` 并等待人工输入以继续验证。
 
 ## 2. 架构分层
 
-系统由四个解耦的层次组成：
+框架侧由三个解耦的层次组成；所有运行时记忆都落在工作区侧（`.test-workspace/`），参见 §0。
 
 ### 2.1 Schema层（`schemas/`）
-*   **角色**：大脑。定义工作流、产物、角色和约束。
-*   **核心组件**：`schema.yaml`。它定义了：
-    *   **角色**（Supervisor、Generator、Planner、Executor、Reporter）
-    *   **执行模式**（Full-Auto vs Assisted）
-    *   **通信协议**（`test-status.json` 状态机）
-*   **为什么**：声明式定义允许在不更改代码的情况下更改流程逻辑。
+*   **角色**：大脑。定义工作流、产物、角色、约束以及**质量契约**。
+*   **核心组件**：
+    *   `schema.yaml` — 声明角色、执行模式、通信协议。
+    *   `standards/` — 测试用例生成、任务规划、报告撰写的质量契约（MUST 规则 + 自检清单）。
+    *   `templates/` — 所有 artifact 的 markdown 骨架（test-cases、test-task、manual-test-guide、test-report、pitfall）。
+*   **为什么**：声明式定义允许在不更改代码的情况下改变流程逻辑与质量基线。
 
 ### 2.2 Adapter层（`adapters/`）
-*   **角色**：双手。封装技术实现。
-*   **核心组件**：`adapters/`。包含定义如何执行特定操作的markdown文件（例如 `trigger/hsf.md`、`logging/sls.md`）。
-*   **为什么**：将逻辑与工具解耦。从SLS切换到ELK只需要更改adapter文件。
+*   **角色**：双手。定义**工具必须做什么**，而不是某个具体工具怎么做。
+*   **核心组件**：
+    *   `_interfaces/` — 各类 adapter 的接口契约（trigger / logging / database / deployment / config-center / diagnose）。具体实现落在 `.test-workspace/adapters/` 下。
+    *   `_capabilities.yaml` — 抽象能力命名空间（`cap.trigger.rpc`、`cap.log.query` 等）。任务计划引用能力名，不引用具体工具。
+    *   `validation/` — 通用 L1–L4 校验规则（response / log-path / data-state）。
+    *   `domains.yaml` — 测试领域到所需能力的注册表。
+*   **为什么**：将逻辑与工具解耦。替换日志后端或 RPC 后端只需更新团队的 `.test-workspace/adapters/` 与 `adaptations.yaml`。框架本身从不携带任何厂商专有实现。
 
-### 2.3 Agent层（`agents/`）
-*   **角色**：身份。定义AI执行者的能力。
-*   **核心组件**：`agents/<profile>.md`。描述Agent可以做什么（例如后台进程、并行任务、文件访问）。
-*   **为什么**：实现**自适应执行**。如果Agent缺乏"后台进程"能力，Schema逻辑会自动从异步部署降级为同步等待。
-
-### 2.4 Knowledge层（`knowledge/`）
-*   **角色**：记忆。存储历史数据、陷阱和最佳实践。
-*   **核心组件**：`knowledge/index.yaml` & `pitfalls/*.md`。
-*   **为什么**：防止重复工作。Agent在运行测试前会查询此层以避免已知问题。
+### 2.3 Agent 层（`agents/`）
+*   **角色**：身份。定义 AI 执行者的能力。
+*   **核心组件**：
+    *   `_interfaces/profile.md` —— 所有 profile 必须满足的 schema 契约。
+    *   `profiles/` —— 常见 AI 的预置画像（`hermes`、`qoder`、`cursor`、`aone-copilot`、`claude-code`）。
+    *   `template.md` —— 新 agent 的空白模板。
+    *   `self-check-instructions.md` —— 自检协议（Phase A：5 项基础设施探测；Phase B：能力命名空间探测；Phase C：默认降级）。
+*   **解析顺序**（见 INSTRUCTIONS Step 1）：`agents/profiles/<name>.md` → `.test-workspace/agents/<name>.md` → 自检。
+*   **为什么**：实现**自适应执行**。框架只保留契约 + 预置；团队差异沉淀在 `.test-workspace/agents/`。Agent 缺能力时 Schema 自动降级（如异步部署 → 同步等待、MCP 查询 → SKIP）。
 
 ## 3. 执行路由（路由逻辑）
 
@@ -58,10 +84,10 @@ Schema根据 `test-config.yaml` 中的配置路由任务：
 日志记录是SOP框架的核心透明度机制，确保AI工作流的可审计性和可追踪性。
 
 ### 4.1 执行日志（execution-log.md）
-*   **位置**：`test-runs/<requirement-id>/execution-log.md`
+*   **位置**：`.test-workspace/runs/<requirement-id>/execution-log.md`
 *   **作用**：黑匣子式审计记录
 *   **记录内容**：
-    *   每个HSF调用的详细信息和参数
+    *   每个 RPC / HTTP 调用的详细信息和参数
     *   所有SQL查询语句和结果
     *   Shell命令的执行记录
     *   时间戳和参数的实时记录
@@ -75,8 +101,8 @@ SOP支持多层级日志验证机制：
 - 验证success字段、code值、data结构
 
 #### L2: 日志路径验证（Log Path Validation）
-- **提取traceId**：从响应中提取分布式追踪ID
-- **SLS日志查询**：通过MCP工具查询SLS日志
+- **提取 traceId**：从响应中提取分布式追踪ID
+- **日志查询**：通过配置的 logging adapter（能力 `cap.log.query`）查询日志
 - **验证规则**：
   - **完整性**：所有预期节点都存在
   - **顺序性**：节点按正确顺序出现
@@ -87,20 +113,20 @@ SOP支持多层级日志验证机制：
 - 检查预期的数据持久化和一致性
 
 ### 4.3 日志适配器系统
-通过Adapter层实现日志系统的可插拔设计：
+通过 Adapter 层实现日志系统的可插拔设计：
 
-*   **adapters/logging/sls.md**：SLS日志查询适配器
-*   **adapters/validation/log-path.md**：日志路径验证规则
-*   **切换支持**：可轻松从SLS切换到ELK等其他日志系统
+*   `adapters/_interfaces/logging.md` —— 通用 logging adapter 契约。
+*   `adapters/validation/log-path.md` —— 通用日志路径验证规则。
+*   **切换支持**：任何满足 `cap.log.query` 的后端可通过 `.test-workspace/adapters/logging/<name>.md` 接入。
 
 ### 4.4 日志排除规则
-通过 `.test-adaptations.yaml` 支持动态日志排除：
+通过 `.test-workspace/adaptations.yaml` 支持动态日志排除：
 ```yaml
-- id: sls-exclude-patterns
-  triggered_by: "L2 Log validation false positive (3rd party logs)"
+- id: log-exclude-patterns
+  triggered_by: "L2 Log validation false positive (third-party logs)"
   rule: "L2 Log Validation Exclusion"
   change:
-    add: ["com.thirdparty.*", "external-gateway.*"]
+    add: ["<noisy-log-pattern-1>", "<noisy-log-pattern-2>"]
 ```
 
 ## 5. 通信协议
@@ -129,26 +155,29 @@ SOP支持两个维度的灵活性：
 SOP通过双层机制在每次运行后自动改进：
 
 ### 第1层：运行时适应（自动）
-*   **文件**：`.test-adaptations.yaml`
+*   **文件**：`.test-workspace/adaptations.yaml`
 *   **触发**：次要参数调整（例如超时阈值、日志排除）。
 *   **动作**：AI修改文件并在下次运行中立即应用新规则。
 *   **风险**：低（仅限于参数）。
 
 ### 第2层：结构提案（人工协同）
-*   **文件夹**：`proposals/`
+*   **文件夹**：`.test-workspace/proposals/`
 *   **触发**：重大逻辑、工作流或schema更改（例如添加新的验证层L5、更改DAG流程）。
 *   **动作**：
     1.  AI检测到结构更改的需求。
-    2.  AI生成一个目录 `proposals/<proposal-id>/`，包含 `proposal.md` 和 `schema-diff.patch`。
+    2.  AI生成一个目录 `.test-workspace/proposals/<proposal-id>/`，包含 `proposal.md` 和 `schema-diff.patch`。
     3.  **暂停**：AI暂停进化并提示用户审查。
     4.  **决定**：
-        *   **批准**：AI将补丁合并到 `schemas/` 并清理 `proposals/`。
+        *   **批准**：用户手动应用补丁（框架 `.test-sop/` 是上游，可能需要 PR）。
         *   **拒绝**：AI删除提案并记录原因。
 *   **风险**：高（更改SOP结构）。
 
-### 3. 知识捕获
-*   **文件**：`knowledge/pitfalls/*.md` & `knowledge/index.yaml`
-*   **触发**：遇到新bug、工具问题或环境怪癖。
+### 第3层：知识捕获
+*   **文件**：
+    *   `.test-workspace/skills/*.md` —— 可复用的成功流程（自动沉淀）
+    *   `.test-workspace/pitfalls/*.md` —— 项目级踩坑
+    *   `.test-workspace/memory.md` —— 团队偏好与项目上下文
+*   **触发**：遇到新bug、工具问题、环境怪癖，或成功可复用的模式。
 *   **动作**：AI记录解决方案以防止未来运行中的重复工作。
 
 这确保了**第2天总是比第1天更好**，平衡速度（第1层）与安全（第2层）。

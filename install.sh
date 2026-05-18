@@ -4,7 +4,7 @@ set -e
 REPO="ai-auto-test-sop"
 TARGET_DIR=".test-sop"
 REPO_URL="https://github.com/xuwu0/ai-auto-test-sop.git"
-CONFIG_FILE="test-config.yaml"
+WORKSPACE_DIR=".test-workspace"
 
 echo "🤖 Initializing AI Auto Test SOP..."
 
@@ -14,26 +14,59 @@ if ! command -v git &> /dev/null; then
     exit 1
 fi
 
-# 2. Install or Update
+# 2. Install or Update framework
 if [ -d "$TARGET_DIR/.git" ]; then
-    echo "🔄 Found existing installation, updating..."
+    echo "🔄 Found existing framework, updating..."
     cd "$TARGET_DIR"
     git pull origin main
     cd ..
 else
-    echo "📦 Downloading latest release..."
+    echo "📦 Downloading latest framework..."
     git clone "$REPO_URL" "$TARGET_DIR"
-    # Clean up git metadata for the user
     rm -rf "$TARGET_DIR/.git" "$TARGET_DIR/.github"
 fi
 
-# 3. Initialize Config
-if [ ! -f "$CONFIG_FILE" ]; then
-    echo "📝 Generating default configuration: $CONFIG_FILE"
-    cp "$TARGET_DIR/config/test-config-template.yaml" "$CONFIG_FILE"
-    echo "✅ Please edit $CONFIG_FILE to match your project stack."
+# 3. Bootstrap workspace (project-side accumulation directory)
+if [ ! -d "$WORKSPACE_DIR" ]; then
+    echo "🆕 Bootstrapping workspace at $WORKSPACE_DIR/ ..."
+    mkdir -p "$WORKSPACE_DIR/skills"
+    mkdir -p "$WORKSPACE_DIR/pitfalls"
+    mkdir -p "$WORKSPACE_DIR/runs"
+    mkdir -p "$WORKSPACE_DIR/proposals"
+
+    # Seed config from templates
+    cp "$TARGET_DIR/config/test-config-template.yaml" "$WORKSPACE_DIR/config.yaml"
+    cp "$TARGET_DIR/config/adaptations-template.yaml" "$WORKSPACE_DIR/adaptations.yaml"
+    cp "$TARGET_DIR/config/workspace-gitignore-template" "$WORKSPACE_DIR/.gitignore"
+
+    # Seed memory.md placeholder
+    cat > "$WORKSPACE_DIR/memory.md" <<'EOF'
+# Project Memory
+
+> Team preferences, project context, and lessons learned. Edited by humans and AI.
+
+## Project Context
+- (Describe the project briefly here.)
+
+## Team Preferences
+- (e.g., naming conventions, must-run hooks, etc.)
+
+## Lessons Learned
+- (Auto-appended by AI's review-cycle.)
+EOF
+
+    echo "✅ Workspace ready:"
+    echo "   $WORKSPACE_DIR/config.yaml          (edit me)"
+    echo "   $WORKSPACE_DIR/adaptations.yaml     (auto-evolved)"
+    echo "   $WORKSPACE_DIR/memory.md            (team preferences)"
+    echo "   $WORKSPACE_DIR/skills/              (success workflows)"
+    echo "   $WORKSPACE_DIR/pitfalls/            (project pitfalls)"
+    echo "   $WORKSPACE_DIR/runs/                (per-requirement outputs)"
+    echo "   $WORKSPACE_DIR/proposals/           (upstream-candidate sediments)"
 else
-    echo "✅ Configuration $CONFIG_FILE already exists, skipping."
+    echo "✅ Workspace $WORKSPACE_DIR/ already exists, skipping bootstrap."
 fi
 
-echo "🎉 Installation complete! You can now ask your AI to run tests using the SOP in .test-sop/"
+echo ""
+echo "🎉 Installation complete!"
+echo "👉 Next: edit $WORKSPACE_DIR/config.yaml, then ask your AI: /test-sop <requirement-source>"

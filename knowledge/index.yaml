@@ -1,9 +1,0 @@
-# Knowledge Index
-# Auto-generated index of pitfalls and best practices.
-# AI uses this file to quickly search for relevant solutions before running tests.
-
-pitfalls:
-  # - id: maven-compile-fail
-  #   keywords: [mvn test, compile error, class missing, junit, mockito]
-  #   category: unit-testing
-  #   file: pitfalls/maven-compile-fail.md

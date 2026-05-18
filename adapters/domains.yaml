@@ -1,26 +1,33 @@
-# Registry of test domains and their required adapters
+# Registry of Test Domains
+#
+# Each domain declares which adapter capabilities it requires.
+# Capabilities are abstract (defined in `_capabilities.yaml`); concrete
+# implementations live in `.test-workspace/adapters/` and are bound via
+# `.test-workspace/adaptations.yaml`.
+
 domains:
   backend-api:
-    description: "Backend interface testing (HSF/HTTP)"
-    trigger: trigger/hsf.md
-    validation:
-      - validation/response.md
-      - validation/log-path.md
-      - validation/data-state.md
+    description: "Backend interface testing (RPC / HTTP)"
+    capabilities:
+      trigger: [cap.trigger.rpc, cap.trigger.http]
+      validation:
+        - cap.validation.response   # L1
+        - cap.validation.log_path   # L2
+        - cap.validation.data_state # L3
 
   frontend-ui:
     description: "Frontend UI testing"
-    trigger: trigger/playwright.md
-    validation:
-      - validation/dom.md
-      - validation/visual.md
+    capabilities:
+      trigger: [cap.trigger.browser]
+      validation:
+        - cap.validation.dom        # L4 functional
+        - cap.validation.visual     # L4 visual regression (optional)
 
   full-stack:
-    description: "End-to-end (Frontend Operation + Backend Validation)"
-    trigger:
-      - trigger/playwright.md
-      - trigger/hsf.md
-    validation:
-      - validation/dom.md
-      - validation/log-path.md
-      - validation/data-state.md
+    description: "End-to-end (frontend operation + backend validation)"
+    capabilities:
+      trigger: [cap.trigger.browser, cap.trigger.rpc]
+      validation:
+        - cap.validation.dom
+        - cap.validation.log_path
+        - cap.validation.data_state

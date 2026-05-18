@@ -1,0 +1,21 @@
+# Project Adaptations (Auto-Generated)
+# AI appends rules here based on real execution feedback. DO NOT delete.
+# Scope: Project-level (overrides default Schema behavior).
+
+project: <your-project-name>
+
+# Tier 1: Runtime Adaptations (Safe, Parameter-only changes)
+adaptations:
+  # Example 1: Timeout adjustment
+  # - id: l3-async-poll
+  #   triggered_by: "TC-010 L3 validation failed due to async event delay"
+  #   rule: "L3 Data Validation Timeout"
+  #   change: { from: "30s", to: "60s" }
+  #   created_at: "YYYY-MM-DD"
+
+  # Example 2: Log exclusion patterns
+  # - id: log-exclude-patterns
+  #   triggered_by: "L2 Log validation false positive (third-party noise)"
+  #   rule: "L2 Log Validation Exclusion"
+  #   change: { add: ["<noisy-log-pattern>"] }
+  #   created_at: "YYYY-MM-DD"

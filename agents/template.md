@@ -1,29 +1,48 @@
-# Agent Profile: [Agent Name]
+# Agent Profile: <agent-name>
 
-## 1. Capabilities
-- [ ] File Read/Write
+> Copy this template to either:
+> - `agents/profiles/<name>.md` — if contributing a reusable preset.
+> - `.test-workspace/agents/<name>.md` — if specific to your team/setup.
+
+## 1. Identity
+- name: <agent-name>
+- vendor: <vendor>
+- mode: Multi-Agent Orchestration | Single-Agent | Pair-Programming
+
+## 2. Infrastructure Capabilities
+- [ ] File Read/Write/Patch
 - [ ] Shell Execution
 - [ ] Background Processes
 - [ ] Parallel Agents
+- [ ] State Management
 
-## 2. MCP Support
-- [ ] Native MCP
-- [ ] CLI (mcporter)
+## 3. Capability Namespace Support
+> Map every `cap.*` from `adapters/_capabilities.yaml` to a binding.
+> `binding`: `mcp` | `cli` | `native` | `none`. `none` triggers degradation.
 
-## 3. Running Mode
-- Deployment: [Async / Sync / Manual]
-- Memory: [Persistent / Session-only]
+```yaml
+capabilities:
+  cap.trigger.rpc:     { binding: none }
+  cap.trigger.http:    { binding: none }
+  cap.trigger.browser: { binding: none }
+  cap.trigger.cli:     { binding: none }
+  cap.log.query:       { binding: none }
+  cap.database.query:  { binding: none }
+  cap.deploy.async:    { binding: none }
+  cap.deploy.health:   { binding: none }
+  cap.config.read:     { binding: none }
+  cap.diagnose.trace:  { binding: none }
+```
 
 ## 4. Degradation Rules (Global Default)
-
-> These are the **lowest-priority defaults**. They can be overridden at Requirement level (`test-config.yaml`) or Case level (in `test-task.md`).
+> Lowest-priority defaults. Overridable at Requirement (`test-config.yaml`) or Case (`test-task.md`) level.
 
 ```yaml
 degradation:
-  no_mcp: SKIP          # No MCP tools → skip L2/L3 validation
-  no_shell: MANUAL      # No shell access → degrade to manual guide
-  no_deploy: MANUAL     # No deploy capability → manual deployment
-  no_database: SKIP     # No DB access → skip L3 data validation
+  no_mcp:      SKIP
+  no_shell:    MANUAL
+  no_deploy:   MANUAL
+  no_database: SKIP
 ```
 
 **Action Reference**:
@@ -32,4 +51,9 @@ degradation:
 | `SKIP` | Skip the validation layer, mark as SKIPPED |
 | `FAIL` | Mark the case as FAIL immediately |
 | `MANUAL` | Degrade to assisted mode, generate manual guide |
-| `FALLBACK:<adapter>` | Use an alternative adapter (e.g., `FALLBACK:arthas`) |
+| `FALLBACK:<adapter>` | Use an alternative adapter |
+
+## 5. Failure Handling
+- <Retry policy>
+- <Max repair iterations per case>
+- <Escalation rule>

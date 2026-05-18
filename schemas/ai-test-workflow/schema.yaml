@@ -1,5 +1,5 @@
 name: ai-test-workflow
-version: 1.5
+version: 1.8
 description: AI-driven automated testing pipeline with Execution Logging
 
 # ==========================================
@@ -10,9 +10,9 @@ roles:
     type: main
     desc: "Orchestrator. Parses input, manages state, dispatches tasks."
     initialization: |
-      1. Check if 'agents/<current-agent-name>.md' exists.
-      2. IF NOT EXISTS: Run 'agents/self-check-instructions.md', create profile.
-      3. Load profile.
+      1. Resolve profile: agents/profiles/<name>.md -> .test-workspace/agents/<name>.md.
+      2. IF NEITHER EXISTS: Run 'agents/self-check-instructions.md', save to '.test-workspace/agents/<name>.md'.
+      3. Load profile; apply its degradation as Layer-3 default.
 
   sub_agents:
     - id: case-generator
@@ -30,10 +30,11 @@ roles:
 rules:
   isolation:
     - input_source: "Read-Only. NEVER write to input paths."
-    - output_base: "ALWAYS write to 'test-runs/<requirement-id>/'. Never mix inputs and outputs."
+    - output_base: "ALWAYS write to '.test-workspace/runs/<requirement-id>/'. Never mix inputs and outputs."
+    - framework_readonly: "NEVER write to '.test-sop/'. All accumulation goes to '.test-workspace/'."
   logging:
     - artifact: "execution-log.md"
-      requirement: "Every tool call (HSF, SQL, Shell) MUST be logged with params/result BEFORE execution."
+      requirement: "Every tool call (RPC, HTTP, SQL, Shell) MUST be logged with params/result BEFORE execution."
 
   # --- Degradation Rules: 3-Layer Inheritance ---
   degradation:
@@ -43,7 +44,7 @@ rules:
       Only overrides need to be specified; unspecified keys inherit from the parent layer.
     resolution_algorithm: |
       effective_rules = merge(
-        agent_profile.degradation,       # Layer 3: Global default (agents/<profile>.md)
+        agent_profile.degradation,       # Layer 3: Global default (.test-workspace/agents/<profile>.md, resolved from agents/profiles/)
         test_config.degradation,         # Layer 2: Requirement level (test-config.yaml)
         current_case.degradation         # Layer 1: Case level (test-task.md per-case block)
       )
@@ -107,4 +108,4 @@ loops:
     trigger: "test-results.json contains FAIL"
     max_iterations: 3
 
-output_base: test-runs/<requirement-id>/
+output_base: .test-workspace/runs/<requirement-id>/

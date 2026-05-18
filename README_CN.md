@@ -1,85 +1,99 @@
 # AI Auto Test SOP
 
-**通用、AI代理无关、自进化的AI测试框架。**
+**通用、AI 代理无关、自进化的 AI 测试框架。**
+
+[English README](README.md) | [版本变更记录](CHANGELOG.md)
 
 ## 📖 概述
 
-**AI Auto Test SOP** 是一个标准化的、AI驱动的自动化测试框架。
-与依赖特定工具或僵化工作流的传统测试脚本不同，该SOP具有以下特点：
+**AI Auto Test SOP** 是一个标准化的、AI 驱动的自动化测试框架。
+与依赖特定工具或僵化工作流的传统测试脚本不同，本 SOP 具备以下特点：
 
-*   **规格无关**：可接受来自OpenSpec、语雀、Markdown甚至自然语言的规格说明。
-*   **代理无关**：根据AI代理的能力自动调整执行策略。
-*   **自进化**：从实际执行中构建陷阱和适应性的知识库。
+*   **规格无关**：可接受来自 OpenSpec、语雀、Markdown 甚至自然语言的规格说明。
+*   **代理无关**：根据 AI 代理（Qoder、Cursor、Aone、Claude Code、Hermes 等）的能力自动调整执行策略。
+*   **自进化**：从实际执行中沉淀陷阱和参数适应，越用越智能。
+
+## 🏗️ 架构：框架 vs 工作区
+
+本 SOP 严格区分**通用框架**与**项目侧沉淀**：
+
+```
+your-project/
+├── .test-sop/              ← 通用框架（只读，通过 git pull 升级）
+└── .test-workspace/        ← 项目侧所有文件（配置 + 沉淀 + 产物）
+    ├── config.yaml         ← 项目配置
+    ├── adaptations.yaml    ← Tier-1 进化（自动调参）
+    ├── memory.md           ← 团队偏好与项目上下文
+    ├── skills/             ← 可复用成功流程（自动沉淀）
+    ├── pitfalls/           ← 项目级踩坑记录
+    └── runs/<req-id>/      ← 每个需求的测试产物
+```
+
+> **关键原则**：框架是一份**规范**。团队的所有沉淀都在 `.test-workspace/` 中，永不污染 `.test-sop/`。
 
 ## 🏁 快速开始
 
-### ⚡ 方案A：零配置（推荐给AI代理）
-*让AI处理所有事情的最简单方式。*
+### ⚡ 方案 A：自动初始化（推荐）
+*最简单的方式，让 AI 处理所有事情。*
 
-1. **克隆框架**：
+1. **安装框架 + 工作区**：
    ```bash
    git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop
-   cp .test-sop/config/test-config-template.yaml ./test-config.yaml
+   bash .test-sop/install.sh
    ```
+   这会自动创建 `.test-workspace/`，包含默认配置、adaptations、memory 以及空的 skills/pitfalls/runs 目录。
 
 2. **激活代理**：
-   将 `INSTRUCTIONS.md` 复制到项目根目录（或粘贴到AI的自定义指令中）：
+   将 `INSTRUCTIONS.md` 复制到项目根目录（或粘贴到 AI 的自定义指令中）：
    ```bash
    cp .test-sop/INSTRUCTIONS.md .
    ```
-   *现在，只需输入 `/test-sop`，AI就会自动启动、自检并运行！*
+   现在输入 `/test-sop <需求源>`，AI 会自动启动、自检并运行。
 
-### 🔧 方案B：手动配置（适合开发者）
+### 🔧 方案 B：手动配置
 
-1. **克隆**：`git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop`
-2. **配置**：`cp .test-sop/config/test-config-template.yaml ./test-config.yaml`
-3. **编辑配置**：在 `test-config.yaml` 中定义你的MCP工具和执行模式。
-4. **开始**：让AI基于 `.test-sop/` 中的schema执行。
+1. `git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop`
+2. 编辑 `.test-workspace/config.yaml`（由 install.sh 自动生成）以匹配你的技术栈。
+3. 让 AI 执行 `/test-sop <需求源>`。
 
-### 🔌 MCP配置（全自动模式必需）
-**要启用自动化测试（L2日志、L3数据、部署），必须配置你的MCP工具。**
+### 🔌 MCP 配置（全自动模式必需）
 
-编辑 `test-config.yaml`：
+编辑 `.test-workspace/config.yaml`：
 ```yaml
 mcp:
-  tools:
-    sls-mcp: { enabled: true }   # 用于日志验证
-    dms-mcp-server: { enabled: true } # 用于数据验证
-    group-env: { enabled: true } # 用于部署
-  fallback:
-    sls-mcp: "跳过L2，标记为SKIPPED"
+  enabled_capabilities:
+    - cap.log.query        # 用于 L2 日志验证
+    - cap.database.query   # 用于 L3 数据验证
+    - cap.deploy.async     # 用于部署
 ```
-> **💡 没有MCP工具？** 在配置中设置 `execution_mode: assisted`。AI将为你生成手动指南。
+> **💡 没有 MCP 工具？** 设置 `execution_mode: assisted`，AI 将为你生成手动指南。
 
-## 🔄 更新
+## 🔄 升级框架
 
-SOP框架正在积极开发中。更新方法：
+框架持续迭代，升级方式：
 ```bash
 cd .test-sop && git pull origin main
 ```
+你的 `.test-workspace/` 不会被影响。
 
 ## 📺 监控与透明度
 
-由于AI工作流可能较长，请使用以下工具跟踪进度：
+通过以下文件跟踪 AI 工作流进度：
 
-1.  **`test-runs/<id>/test-status.json`**：
-    *   **"仪表盘"**。检查 `current_step` 和 `retry_count`。
-2.  **`test-runs/<id>/execution-log.md`**：
-    *   **"黑匣子"**。包含每个HSF调用、SQL查询和Shell命令的实时审计记录，带有时间戳和参数。
-    *   *注意：AI被要求在每次操作前写入此文件。*
+1. **`.test-workspace/runs/<id>/test-status.json`** —— **"仪表盘"**。检查 `current_step` 与 `retry_count`。
+2. **`.test-workspace/runs/<id>/execution-log.md`** —— **"黑匣子"**。实时审计每次 RPC 调用、SQL 查询、Shell 命令。
 
-## 📂 项目结构
+## 📂 框架目录结构
 
 ```text
-ai-auto-test-sop/
-├── schemas/                  # 工作流定义（DAG + 模板）
-├── adapters/                 # 技术实现
-├── agents/                   # AI代理配置文件与自检
-├── knowledge/                # 自进化知识库
-├── config/                   # 项目配置模板
-├── INSTRUCTIONS.md           # <--- 将此粘贴给AI以启用 /test-sop 触发器
+ai-auto-test-sop/        # 框架仓库（克隆为 .test-sop/）
+├── schemas/             # 工作流定义（DAG + 模板）
+├── adapters/            # 通用技术适配器
+├── agents/              # Profile 契约 + 预置画像 + 自检
+├── config/              # 工作区初始化模板
+├── INSTRUCTIONS.md
 ├── install.sh
-├── DESIGN.md
+├── DESIGN.md            # 架构与设计原理
 └── README.md
 ```
 

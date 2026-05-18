@@ -3,11 +3,11 @@
 ## 1. Task Overview
 | TC-ID | Scenario | Priority | Type | Data Construction | Validation | Degradation |
 |-------|----------|----------|------|-------------------|------------|-------------|
-| TC-001 | Normal | P0 | HSF | Existing Data | L1+L2+L3 | *(default)* |
+| TC-001 | Normal | P0 | RPC | Existing Data | L1+L2+L3 | *(default)* |
 | TC-002 | Edge | P1 | Mock | 📋 SQL | L1 | `no_mcp: FAIL` |
 
 ## 2. Data Construction Details
-### 🆕 New HSF Interface
+### 🆕 New RPC Interface
 (If needed)
 
 ### 📋 SQL Data Prep
@@ -26,7 +26,7 @@ DELETE FROM ...
 | TC-001 | table_a | status | SQL Query |
 
 ### Log Observation Points
-| TC-ID | Expected Nodes | SLS Query | Time Window |
+| TC-ID | Expected Nodes | Log Query | Time Window |
 |-------|----------------|-----------|-------------|
 | TC-001 | Start -> End | * \| traceId... | 0-5s |
 
