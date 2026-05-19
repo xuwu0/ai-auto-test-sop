@@ -1,7 +1,7 @@
 # Skill & Pitfall Harvest Rules
 #
-# Used by AI in INSTRUCTIONS Step 0.6 (first install only) and
-# via `/test-sop collect-skill` (on-demand) to discover existing skills
+# Used by install.sh (auto-collect during first install) and
+# via `/test-sop collect-skill` (on-demand incremental re-scan by AI) to discover existing skills
 # scattered across the project, classify them, deduplicate, and
 # consolidate into .test-workspace/skills/ and .test-workspace/pitfalls/.
 

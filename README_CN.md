@@ -42,7 +42,7 @@ your-project/
    git clone https://github.com/xuwu0/ai-auto-test-sop.git .test-sop
    bash .test-sop/install.sh --lang zh   # 或：--lang en（默认）
    ```
-   这会自动创建 `.test-workspace/`，包含默认配置（语言已锁定）、adaptations、memory 以及空的 skills/pitfalls/runs/proposals 目录。
+   这会自动创建 `.test-workspace/`，包含默认配置（语言已锁定），**并自动扫描 MCP 配置和收集已有技能**到工作区。
 
 2. **激活代理**：
    `install.sh` 会自动把对应语言的 `INSTRUCTIONS` 复制到项目根目录：
@@ -59,17 +59,17 @@ your-project/
 2. 编辑 `.test-workspace/config.yaml`（由 install.sh 自动生成）以匹配你的技术栈。
 3. 让 AI 执行 `/test-sop <需求源>`。
 
-### 🔌 MCP 配置（全自动模式必需）
+### 🔌 MCP 与 Skills（安装时自动收集）
 
-编辑 `.test-workspace/config.yaml`：
-```yaml
-mcp:
-  enabled_capabilities:
-    - cap.log.query        # 用于 L2 日志验证
-    - cap.database.query   # 用于 L3 数据验证
-    - cap.deploy.async     # 用于部署
-```
+运行 `install.sh` 时，会**自动**：
+- **扫描 MCP 配置**（`.qoder/settings.local.json`、`.cursor/mcp.json` 等），将 server 绑定到 `config.yaml` 对应能力。
+- **收集已有技能**（从 `.qoder/skills/`、`.cursor/rules/` 等）归集到 `.test-workspace/skills/` 和 `pitfalls/`。
+
+无需手动编辑。安装后审阅 `.test-workspace/config.yaml` 确认绑定即可。
+
 > **💡 没有 MCP 工具？** 设置 `execution_mode: assisted`，AI 将为你生成手动指南。
+>
+> **🔄 后续重新扫描？** 使用 `/test-sop collect-mcp` 或 `/test-sop collect-skill` 增量更新。
 
 ## 🔄 升级框架
 

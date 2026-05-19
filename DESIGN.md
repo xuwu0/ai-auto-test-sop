@@ -48,6 +48,8 @@ The system is composed of three decoupled layers (framework side). All runtime m
 *   **Key Components**:
     *   `_interfaces/` — contracts for each adapter category (trigger / logging / database / deployment / config-center / diagnose). Concrete implementations live in `.test-workspace/adapters/`.
     *   `_capabilities.yaml` — the abstract capability namespace (`cap.trigger.rpc`, `cap.log.query`, ...). Tasks reference capabilities, not tools.
+    *   `_mcp-discovery.yaml` — MCP auto-discovery rules (scan paths + substring→capability mappings). Used by `install.sh` during first install.
+    *   `_skill-discovery.yaml` — Skill & Pitfall harvest rules (scan paths + relevance keywords + classification signals). Used by `install.sh` during first install.
     *   `validation/` — universal L1–L4 validation rules (response / log-path / data-state).
     *   `domains.yaml` — registry mapping each test domain to required capabilities.
 *   **Why**: Decouples logic from tools. Swapping logging or RPC backends only requires updating the team's `.test-workspace/adapters/` and `adaptations.yaml`. The framework itself never carries vendor-specific implementations.
@@ -246,7 +248,9 @@ The SOP improves itself automatically after every run via a two-tier mechanism:
     *   `.test-workspace/skills/*.md` — reusable success workflows (auto-accumulated)
     *   `.test-workspace/pitfalls/*.md` — project-specific pitfalls
     *   `.test-workspace/memory.md` — team preferences & project context
-*   **Trigger**: Encountering a novel bug, tool issue, environment quirk, or a successful reusable pattern.
+*   **Initial Seeding**: `install.sh` auto-collects existing skills and pitfalls from known AI tool directories (`.qoder/skills/`, `.cursor/rules/`, etc.) during first install. This provides a Day-0 knowledge base without manual migration.
+*   **Runtime Trigger**: Encountering a novel bug, tool issue, environment quirk, or a successful reusable pattern.
 *   **Action**: AI records the solution to prevent rework in future runs.
+*   **On-Demand Re-scan**: `/test-sop collect-skill` provides AI-powered incremental harvest with semantic dedup and format normalization.
 
 This ensures that **Day 2 is always better than Day 1**, balancing speed (Tier 1) with safety (Tier 2).

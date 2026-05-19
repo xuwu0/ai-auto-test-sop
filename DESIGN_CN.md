@@ -48,6 +48,8 @@ your-project/
 *   **核心组件**：
     *   `_interfaces/` — 各类 adapter 的接口契约（trigger / logging / database / deployment / config-center / diagnose）。具体实现落在 `.test-workspace/adapters/` 下。
     *   `_capabilities.yaml` — 抽象能力命名空间（`cap.trigger.rpc`、`cap.log.query` 等）。任务计划引用能力名，不引用具体工具。
+    *   `_mcp-discovery.yaml` — MCP 自动发现规则（扫描路径 + 子串→能力映射）。由 `install.sh` 在首次安装时使用。
+    *   `_skill-discovery.yaml` — Skill & Pitfall 收割规则（扫描路径 + 相关性关键词 + 分类信号）。由 `install.sh` 在首次安装时使用。
     *   `validation/` — 通用 L1–L4 校验规则（response / log-path / data-state）。
     *   `domains.yaml` — 测试领域到所需能力的注册表。
 *   **为什么**：将逻辑与工具解耦。替换日志后端或 RPC 后端只需更新团队的 `.test-workspace/adapters/` 与 `adaptations.yaml`。框架本身从不携带任何厂商专有实现。
@@ -69,7 +71,7 @@ Schema根据 `test-config.yaml` 中的配置路由任务：
 ### 场景A：全自动模式（默认）
 1.  **输入**：`execution_mode: full-auto`。
 2.  **流程**：Spec → Test Cases → Test Task → **AI Executor** → Test Results → Report。
-3.  **行为**：`executor` Agent自动部署代码，调用HSF/HTTP，并使用MCP工具执行L1-L4验证。
+3.  **行为**：`executor` Agent自动部署代码，调用RPC/HTTP，并使用MCP工具执行L1-L4验证。
 
 ### 场景B：辅助模式（人工协同）
 1.  **输入**：`execution_mode: assisted`。
@@ -177,7 +179,9 @@ SOP通过双层机制在每次运行后自动改进：
     *   `.test-workspace/skills/*.md` —— 可复用的成功流程（自动沉淀）
     *   `.test-workspace/pitfalls/*.md` —— 项目级踩坑
     *   `.test-workspace/memory.md` —— 团队偏好与项目上下文
-*   **触发**：遇到新bug、工具问题、环境怪癖，或成功可复用的模式。
+*   **初始播种**：`install.sh` 在首次安装时自动从已知 AI 工具目录（`.qoder/skills/`、`.cursor/rules/` 等）收集已有技能和踩坑。提供 Day-0 知识库，无需手动迁移。
+*   **运行时触发**：遇到新bug、工具问题、环境怪癖，或成功可复用的模式。
 *   **动作**：AI记录解决方案以防止未来运行中的重复工作。
+*   **按需重新扫描**：`/test-sop collect-skill` 提供 AI 驱动的增量收割，包含语义去重和格式归一化。
 
 这确保了**第2天总是比第1天更好**，平衡速度（第1层）与安全（第2层）。

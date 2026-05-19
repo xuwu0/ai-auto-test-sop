@@ -1,7 +1,7 @@
 # MCP Auto-Discovery Rules
 #
-# Used by AI in INSTRUCTIONS Step 0.5 to automatically map MCP server names
-# (found in project-side MCP config files) to capability namespaces.
+# Used by install.sh (auto-collect during first install) and
+# via `/test-sop collect-mcp` (on-demand incremental re-scan by AI).
 #
 # Match rule: case-insensitive substring match against the server's KEY name
 # (the key under "mcpServers" in JSON). First-matching capability wins.

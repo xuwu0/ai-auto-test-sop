@@ -92,14 +92,132 @@ if [ ! -d "$WORKSPACE_DIR" ]; then
 - (Auto-appended by AI's review-cycle.)
 EOF
 
+    # --- Auto-Collect MCP ---
+    echo "🔍 Scanning MCP configurations..."
+    MCP_CONFIG=""
+    for f in .qoder/settings.local.json .cursor/mcp.json .vscode/mcp.json mcp.json config/mcporter.json .claude/claude_desktop_config.json; do
+      if [ -f "$f" ]; then
+        MCP_CONFIG="$f"
+        break
+      fi
+    done
+
+    MCP_COUNT=0
+    MCP_UNMAPPED=0
+    if [ -n "$MCP_CONFIG" ]; then
+        echo "   Found: $MCP_CONFIG"
+        # Extract mcpServers keys using python (universally available)
+        SERVERS=$(python3 -c "
+import json, sys
+try:
+    with open('$MCP_CONFIG') as f:
+        data = json.load(f)
+    servers = data.get('mcpServers', {})
+    for key in servers:
+        print(key)
+except Exception:
+    pass
+" 2>/dev/null || true)
+
+        # Mapping rules (from _mcp-discovery.yaml)
+        declare -A CAP_MAP
+        CAP_MAP["cap.log.query"]="sls|log|logging|loki|elk|splunk|datadog"
+        CAP_MAP["cap.database.query"]="db|dms|mysql|postgres|postgresql|mongo|redis|sqlite|oracle"
+        CAP_MAP["cap.deploy.async"]="deploy|aone|cd-|jenkins|argocd|kubectl|k8s"
+        CAP_MAP["cap.config.read"]="diamond|nacos|apollo|config-center|configcenter|consul|etcd"
+        CAP_MAP["cap.diagnose.trace"]="arthas|diagnose|trace|profiler|async-profiler|jstack|perfma"
+        CAP_MAP["cap.trigger.http"]="fetch|http|request|curl-mcp|rest"
+        CAP_MAP["cap.trigger.browser"]="playwright|puppeteer|browser|chromium|selenium"
+        CAP_MAP["cap.trigger.rpc"]="grpc|dubbo|thrift|rpc-mcp|hsf"
+
+        BINDINGS=""
+        ENABLED_CAPS=""
+        UNMAPPED_LIST=""
+
+        for server in $SERVERS; do
+            server_lower=$(echo "$server" | tr '[:upper:]' '[:lower:]')
+            matched=""
+            for cap in "${!CAP_MAP[@]}"; do
+                pattern="${CAP_MAP[$cap]}"
+                if echo "$server_lower" | grep -qE "$pattern"; then
+                    matched="$cap"
+                    break
+                fi
+            done
+            if [ -n "$matched" ]; then
+                BINDINGS="${BINDINGS}  ${matched}: ${server}\n"
+                ENABLED_CAPS="${ENABLED_CAPS}    - ${matched}\n"
+                MCP_COUNT=$((MCP_COUNT + 1))
+                echo "   ✅ $server → $matched"
+            else
+                UNMAPPED_LIST="${UNMAPPED_LIST}  # unmapped: ${server}\n"
+                MCP_UNMAPPED=$((MCP_UNMAPPED + 1))
+                echo "   ⚠️  $server → unmapped"
+            fi
+        done
+
+        # Write MCP bindings to adaptations.yaml
+        if [ -n "$BINDINGS" ]; then
+            printf "\nmcp_bindings:\n%b" "$BINDINGS" >> "$WORKSPACE_DIR/adaptations.yaml"
+        fi
+        if [ -n "$UNMAPPED_LIST" ]; then
+            printf "\n# Unmapped MCP servers (assign manually):\n%b" "$UNMAPPED_LIST" >> "$WORKSPACE_DIR/adaptations.yaml"
+        fi
+
+        # Update config.yaml: enabled_capabilities
+        if [ -n "$ENABLED_CAPS" ]; then
+            sed -i.bak "s/^  enabled_capabilities: \[\]/  enabled_capabilities:\n$(printf '%b' "$ENABLED_CAPS")/" "$WORKSPACE_DIR/config.yaml" 2>/dev/null || \
+            sed -i '' "s/^  enabled_capabilities: \[\]/  enabled_capabilities:\n$(printf '%b' "$ENABLED_CAPS")/" "$WORKSPACE_DIR/config.yaml"
+            rm -f "$WORKSPACE_DIR/config.yaml.bak"
+        fi
+    else
+        echo "   No MCP config found, skipping."
+    fi
+
+    # --- Auto-Collect Skills ---
+    echo "🌾 Scanning existing skills & pitfalls..."
+    SKILL_COUNT=0
+    PITFALL_COUNT=0
+    SKILL_DIRS=".qoder/skills .qoder/learned-skills .cursor/rules .aone/skills .claude/commands skills docs/testing scripts/test"
+    RELEVANCE_PATTERN="test|verify|validate|assert|check|coverage|regression|smoke|e2e|integration-test|unit-test|api-test|deploy-verify|bug|error|fail|pitfall|troubleshoot|hotfix|incident"
+    PITFALL_PATTERN="symptom|root.cause|workaround|known.issue|gotcha|caveat|troubleshoot"
+
+    for dir in $SKILL_DIRS; do
+      if [ -d "$dir" ]; then
+        find "$dir" -type f \( -name "*.md" -o -name "*.yaml" -o -name "*.yml" -o -name "*.txt" \) 2>/dev/null | while read -r filepath; do
+          # Check relevance
+          if grep -qilE "$RELEVANCE_PATTERN" "$filepath" 2>/dev/null; then
+            filename=$(basename "$filepath")
+            # Classify: pitfall or skill
+            if grep -qilE "$PITFALL_PATTERN" "$filepath" 2>/dev/null; then
+              # Pitfall
+              target="$WORKSPACE_DIR/pitfalls/$filename"
+              if [ ! -f "$target" ]; then
+                cp "$filepath" "$target"
+                echo "   ✅ $filepath → pitfalls/$filename"
+                PITFALL_COUNT=$((PITFALL_COUNT + 1))
+              fi
+            else
+              # Skill
+              target="$WORKSPACE_DIR/skills/$filename"
+              if [ ! -f "$target" ]; then
+                cp "$filepath" "$target"
+                echo "   ✅ $filepath → skills/$filename"
+                SKILL_COUNT=$((SKILL_COUNT + 1))
+              fi
+            fi
+          fi
+        done
+      fi
+    done
+
+    echo ""
     echo "✅ Workspace ready:"
     echo "   $WORKSPACE_DIR/config.yaml          (edit me)"
     echo "   $WORKSPACE_DIR/adaptations.yaml     (auto-evolved)"
     echo "   $WORKSPACE_DIR/memory.md            (team preferences)"
-    echo "   $WORKSPACE_DIR/skills/              (success workflows)"
-    echo "   $WORKSPACE_DIR/pitfalls/            (project pitfalls)"
-    echo "   $WORKSPACE_DIR/runs/                (per-requirement outputs)"
-    echo "   $WORKSPACE_DIR/proposals/           (upstream-candidate sediments)"
+    echo "   🔍 MCP: $MCP_COUNT bound, $MCP_UNMAPPED unmapped"
+    echo "   🌾 Skills collected from project"
 else
     echo "✅ Workspace $WORKSPACE_DIR/ already exists, skipping bootstrap."
 fi
@@ -115,4 +233,5 @@ fi
 
 echo ""
 echo "🎉 Installation complete!"
-echo "👉 Next: edit $WORKSPACE_DIR/config.yaml, then ask your AI: /test-sop <requirement-source>"
+echo "👉 Next: review $WORKSPACE_DIR/config.yaml, then ask your AI: /test-sop <requirement-source>"
+echo "💡 Later: /test-sop collect-mcp or /test-sop collect-skill to re-scan & organize."

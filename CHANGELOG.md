@@ -44,7 +44,7 @@ git pull origin main
 - **`/test-sop collect-skill` 命令**（中英）：后续可随时手动触发增量收割，补充新增的散落技能
 
 ### Changed
-- **Step 0.5 / 0.6 触发模式调整**：两个自动发现步骤统一为「仅首次安装时执行」，后续通过按需命令 `/test-sop collect-mcp` `/test-sop collect-skill` 手动触发，避免重复扫描干扰正常流程
+- **Step 0.5 / 0.6 触发模式调整**：MCP 扫描与 Skill 收割合并入 Step 0 初始化流程（首次安装时自动执行并直接写入工作区，不单独暂停确认）；后续通过 `/test-sop collect-mcp` `/test-sop collect-skill` 手动触发增量整理
 - **schema.yaml**：`initialization` 阶段调整为 4 步，第 1 步加载 config 并提取 language
 - **INSTRUCTIONS.md / INSTRUCTIONS_CN.md**：Step 0 增加「Language Lock」强制约束块；审阅提示更新为 `language, capabilities, mcp.enabled_capabilities`
 - **install.sh**：`sed` 注入 language 到 config.yaml（替代简单 `cp`）；新增 Step 5：根据 `--lang` 自动拷贝 INSTRUCTIONS_CN.md 或 INSTRUCTIONS.md 到项目根 `./INSTRUCTIONS.md`
